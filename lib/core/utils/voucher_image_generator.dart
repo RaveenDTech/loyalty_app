@@ -1,9 +1,15 @@
+import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter/rendering.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/voucher.dart';
 import '../theme/app_theme.dart';
+
+/// Base URL for the web voucher viewer. Voucher data is appended as ?data=<base64-json>.
+const String voucherViewerBaseUrl =
+    'https://raveendtech.github.io/loyalty_app/index.html?data=';
 
 class VoucherImageGenerator {
   /// Generate voucher image widget
@@ -163,7 +169,7 @@ class VoucherImageGenerator {
     );
   }
 
-  /// Generate voucher message text
+  /// Generate voucher message text (no link).
   static String generateVoucherMessage(Voucher voucher) {
     final expiryDate =
         voucher.expiresAt != null ? _formatDate(voucher.expiresAt!) : 'N/A';
@@ -180,6 +186,62 @@ This voucher can be redeemed at ${voucher.vendorName}. Present this voucher code
 
 Thank you for choosing DSI Group!
     ''';
+  }
+
+  /// Build the full web viewer URL for this voucher (base URL + base64 data).
+  static String buildVoucherViewerUrl(Voucher voucher) {
+    final payload = _viewerPayload(voucher);
+    final json = jsonEncode(payload);
+    final base64 = base64Encode(utf8.encode(json));
+    return '$voucherViewerBaseUrl$base64';
+  }
+
+  /// Share message including the online verification link (for WhatsApp, Email, etc.).
+  /// Use [generateVoucherShareMessageWithShortUrl] to include a short URL in shares.
+  static String generateVoucherShareMessage(Voucher voucher, {String? shortUrl}) {
+    final message = generateVoucherMessage(voucher);
+    final url = shortUrl ?? buildVoucherViewerUrl(voucher);
+    return '$message\n\n📎 View voucher status online: $url';
+  }
+
+  /// Shorten the voucher viewer URL via is.gd (no API key). Returns full URL on failure.
+  static Future<String> getShortVoucherViewerUrl(Voucher voucher) async {
+    final fullUrl = buildVoucherViewerUrl(voucher);
+    try {
+      final uri = Uri.parse(
+        'https://is.gd/create.php?format=simple&url=${Uri.encodeComponent(fullUrl)}',
+      );
+      final response = await http.get(uri).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => throw Exception('timeout'),
+      );
+      if (response.statusCode == 200) {
+        final short = response.body.trim();
+        if (short.startsWith('http')) return short;
+      }
+    } catch (_) {
+      // fallback to full URL
+    }
+    return fullUrl;
+  }
+
+  /// Share message with short URL. Call this before sharing; use result in Share.share.
+  static Future<String> generateVoucherShareMessageWithShortUrl(Voucher voucher) async {
+    final shortUrl = await getShortVoucherViewerUrl(voucher);
+    return generateVoucherShareMessage(voucher, shortUrl: shortUrl);
+  }
+
+  /// Payload for web viewer (same shape as index.html expects).
+  static Map<String, dynamic> _viewerPayload(Voucher voucher) {
+    return {
+      'voucherCode': voucher.voucherCode,
+      'vendorName': voucher.vendorName,
+      'amount': voucher.amount,
+      'status': voucher.status.toString().split('.').last,
+      'purchasedAt': voucher.purchasedAt.toIso8601String(),
+      if (voucher.expiresAt != null) 'expiresAt': voucher.expiresAt!.toIso8601String(),
+      if (voucher.redeemedAt != null) 'redeemedAt': voucher.redeemedAt!.toIso8601String(),
+    };
   }
 
   static String _formatDate(DateTime date) {

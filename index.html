@@ -193,6 +193,9 @@
     .voucher-ribbon.redeemed {
       background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
     }
+    .voucher-ribbon.pending {
+      background: linear-gradient(135deg, var(--muted) 0%, #4b5563 100%);
+    }
 
     /* Top band – GIFT VOUCHER title */
     .voucher-head {
@@ -322,6 +325,62 @@
       font-weight: 700;
       color: var(--text);
       font-variant-numeric: tabular-nums;
+    }
+
+    /* Redeem button */
+    .voucher-redeem-wrap {
+      padding: 16px 24px 8px;
+      border-top: 1px solid var(--border);
+    }
+    .voucher-redeem-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px 20px;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--success) 0%, #0d9668 100%);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .voucher-redeem-btn:hover:not(:disabled) {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+    .voucher-redeem-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+    .voucher-redeem-btn svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .voucher-redeem-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 20px 24px;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    .voucher-redeem-loading-spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: voucher-spin 0.8s linear infinite;
+    }
+    @keyframes voucher-spin {
+      to { transform: rotate(360deg); }
     }
 
     /* Verified / terms line – small print */
@@ -640,6 +699,10 @@
       const VOUCHER_PARAM = 'voucher';
       const DATA_PARAM = 'data';
 
+      // Google Sheet backend: set this to your Apps Script Web app URL (Deploy > New deployment > Web app).
+      // Leave empty to disable redeem and sheet sync (status from URL only).
+      const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzb6OrYZThOXG6h-kxHFS9UrJHoB74F6fR5fcYxkxSQdx6IvqWHPrIcbhT7fWfB0oiYkA/exec'; // e.g. 'https://script.google.com/macros/s/AKfycbz.../exec'
+
       function getJsonFromUrl() {
         const params = new URLSearchParams(window.location.search);
         const voucherParam = params.get(VOUCHER_PARAM);
@@ -672,6 +735,103 @@
           return { text: 'Expired', className: 'expired', icon: '✕' };
         }
         return { text: 'Valid', className: 'valid', icon: '✓' };
+      }
+
+      function canRedeem(voucher) {
+        const s = buildStatus(voucher);
+        return s.className === 'valid';
+      }
+
+      // Google Apps Script often has 20–30s "cold start" on first request; allow time and retry once
+      var SHEET_FETCH_TIMEOUT_MS = 28000;
+
+      function sheetFetchStatus(code, cb, isRetry) {
+        if (!SHEET_SCRIPT_URL || !code) {
+          console.log('[Google Sheet] Status fetch skipped: ' + (!SHEET_SCRIPT_URL ? 'SHEET_SCRIPT_URL not set' : 'no voucher code'));
+          if (cb) cb(null);
+          return;
+        }
+        console.log('[Google Sheet] Establishing connection – fetching status for code:', code + (isRetry ? ' (retry)' : ''));
+        var done = false;
+        function finish(status) {
+          if (done) return;
+          done = true;
+          if (timeoutId) clearTimeout(timeoutId);
+          window[callbackName] = function () {}; /* no-op so late script response does not throw */
+          if (cb) cb(status);
+        }
+        const callbackName = 'sheetStatus_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+        window[callbackName] = function (data) {
+          var status = data && data.status ? data.status.toLowerCase() : null;
+          console.log('[Google Sheet] Connection OK – status received:', status || '(none)');
+          finish(status);
+        };
+        var timeoutId = setTimeout(function () {
+          timeoutId = null;
+          if (!isRetry) {
+            console.warn('[Google Sheet] First attempt timed out (Apps Script may be cold). Retrying once…');
+            sheetFetchStatus(code, cb, true);
+            return;
+          }
+          console.warn('[Google Sheet] Connection timeout (' + (SHEET_FETCH_TIMEOUT_MS / 1000) + 's) after retry – using URL status');
+          finish(null);
+        }, SHEET_FETCH_TIMEOUT_MS);
+        const url = SHEET_SCRIPT_URL + '?action=status&code=' + encodeURIComponent(code) + '&callback=' + callbackName;
+        const script = document.createElement('script');
+        script.src = url;
+        script.onerror = function () {
+          if (!isRetry) {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = null;
+            console.warn('[Google Sheet] First attempt failed. Retrying once…');
+            sheetFetchStatus(code, cb, true);
+            return;
+          }
+          console.error('[Google Sheet] Connection failed – script load error (ERR_CONNECTION_CLOSED or CORS)');
+          finish(null);
+        };
+        document.head.appendChild(script);
+        script.remove();
+      }
+
+      function sheetRedeem(code, cb) {
+        if (!SHEET_SCRIPT_URL || !code) {
+          console.log('[Google Sheet] Redeem skipped: ' + (!SHEET_SCRIPT_URL ? 'SHEET_SCRIPT_URL not set' : 'no voucher code'));
+          if (cb) cb({ error: 'Sheet URL or code missing' });
+          return;
+        }
+        console.log('[Google Sheet] Establishing connection – redeeming code:', code);
+        var done = false;
+        function finish(data) {
+          if (done) return;
+          done = true;
+          if (timeoutId) clearTimeout(timeoutId);
+          window[callbackName] = function () {}; /* no-op so late script response does not throw */
+          if (cb) cb(data || {});
+        }
+        const callbackName = 'sheetRedeem_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+        window[callbackName] = function (data) {
+          if (data && data.ok) {
+            console.log('[Google Sheet] Connection OK – redeem successful');
+          } else {
+            console.error('[Google Sheet] Redeem response error:', data && data.error ? data.error : data);
+          }
+          finish(data);
+        };
+        var timeoutId = setTimeout(function () {
+          timeoutId = null;
+          console.warn('[Google Sheet] Redeem timeout (' + (SHEET_FETCH_TIMEOUT_MS / 1000) + 's). If the script was cold, try again.');
+          finish({ error: 'Request timed out. The server may be starting up – please try Redeem again.' });
+        }, SHEET_FETCH_TIMEOUT_MS);
+        const url = SHEET_SCRIPT_URL + '?action=redeem&code=' + encodeURIComponent(code) + '&callback=' + callbackName;
+        const script = document.createElement('script');
+        script.src = url;
+        script.onerror = function () {
+          console.error('[Google Sheet] Connection failed – script load error (redeem)');
+          finish({ error: 'Request failed. Connection refused or script URL invalid.' });
+        };
+        document.head.appendChild(script);
+        script.remove();
       }
 
       function formatDate(iso) {
@@ -708,7 +868,13 @@
         verified: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
       };
 
-      function renderVoucher(voucher) {
+      let currentVoucher = null;
+      let redeemInProgress = false;
+      let redeemAreaLoading = false;
+
+      function renderVoucher(voucher, opts) {
+        opts = opts || {};
+        currentVoucher = voucher;
         const status = buildStatus(voucher);
         const amountText = formatAmount(voucher.amount);
         const dateChips = [];
@@ -718,10 +884,24 @@
         const datesHtml = dateChips.length ? '<div class="voucher-dates">' + dateChips.map(function (c) {
           return '<div class="voucher-date-chip' + (c.redeemed ? ' redeemed' : '') + '"><span class="voucher-date-label">' + escapeHtml(c.label) + '</span><span class="voucher-date-value">' + escapeHtml(c.value) + '</span></div>';
         }).join('') + '</div>' : '';
+        const showRedeem = canRedeem(voucher) && !opts.hideRedeem;
+        const redeeming = redeemInProgress;
+        const showRedeemArea = redeemAreaLoading || showRedeem;
+        const redeemBtnHtml = showRedeemArea
+          ? redeemAreaLoading
+            ? '<div class="voucher-redeem-wrap"><div class="voucher-redeem-loading"><div class="voucher-redeem-loading-spinner" aria-hidden="true"></div><span>Checking status…</span></div></div>'
+            : '<div class="voucher-redeem-wrap"><button type="button" class="voucher-redeem-btn" id="redeemBtn" ' + (redeeming ? 'disabled' : '') + '><span class="redeem-icon">' + ICONS.redeemed + '</span>' + (redeeming ? ' Redeeming…' : ' Redeem voucher') + '</button></div>'
+          : '';
+        var ribbonClass = status.className;
+        var ribbonText = status.text;
+        if (redeemAreaLoading) {
+          ribbonClass = 'pending';
+          ribbonText = 'Checking…';
+        }
         const html = `
           <div class="voucher-wrap">
             <article class="voucher-card">
-              <div class="voucher-ribbon ${status.className}">${escapeHtml(status.text)}</div>
+              <div class="voucher-ribbon ${ribbonClass}">${escapeHtml(ribbonText)}</div>
               <div class="voucher-head">
                 <div class="voucher-title">Gift Voucher</div>
                 <div class="voucher-vendor">${escapeHtml(voucher.vendorName || '–')}</div>
@@ -738,6 +918,7 @@
                 </div>
               </div>
               ${datesHtml}
+              ${redeemBtnHtml}
               <div class="card-verified">
                 ${ICONS.verified}
                 Verified voucher · DSI Group Loyalty
@@ -746,6 +927,29 @@
           </div>
         `;
         document.getElementById('content').innerHTML = html;
+        var redeemBtn = document.getElementById('redeemBtn');
+        if (redeemBtn && showRedeem && !redeeming) {
+          redeemBtn.addEventListener('click', function () {
+            if (!currentVoucher || redeemInProgress) return;
+            if (!SHEET_SCRIPT_URL) {
+              alert('Redeem is disabled until the Google Sheet backend is connected.\n\nIn index.html, set SHEET_SCRIPT_URL to your Apps Script Web app URL (see voucher_viewer/README.md for setup).');
+              return;
+            }
+            redeemInProgress = true;
+            renderVoucher(currentVoucher);
+            sheetRedeem(currentVoucher.voucherCode, function (data) {
+              redeemInProgress = false;
+              if (data && data.ok) {
+                currentVoucher.status = 'redeemed';
+                currentVoucher.redeemedAt = new Date().toISOString();
+                renderVoucher(currentVoucher);
+              } else {
+                renderVoucher(currentVoucher);
+                alert(data && data.error ? data.error : 'Could not redeem. Try again.');
+              }
+            });
+          });
+        }
       }
 
       function renderError(message) {
@@ -773,12 +977,35 @@
 
       function init() {
         const voucher = getJsonFromUrl();
-        if (voucher && (voucher.voucherCode || voucher.vendorName)) {
-          renderVoucher(voucher);
-        } else {
+        if (!voucher || (!voucher.voucherCode && !voucher.vendorName)) {
           renderError('Open this page with a voucher link (URL with voucher data in JSON format).');
+          setupDemoLink();
+          return;
         }
+        if (SHEET_SCRIPT_URL && voucher.voucherCode) {
+          console.log('[Google Sheet] Loading voucher status from sheet for code:', voucher.voucherCode);
+          redeemAreaLoading = true;
+          renderVoucher(voucher);
+          sheetFetchStatus(voucher.voucherCode, function (sheetStatus) {
+            redeemAreaLoading = false;
+            if (sheetStatus) {
+              voucher.status = sheetStatus;
+              console.log('[Google Sheet] Using sheet status for display:', sheetStatus);
+            } else {
+              console.log('[Google Sheet] Using URL status for display:', voucher.status || '(from URL)');
+            }
+            renderVoucher(voucher);
+          });
+        } else {
+          console.log('[Google Sheet] Sheet not configured or no code – using URL status only');
+          renderVoucher(voucher);
+        }
+        setupDemoLink();
+      }
+
+      function setupDemoLink() {
         const demoLink = document.getElementById('demoLink');
+        if (!demoLink) return;
         demoLink.href = buildDemoUrl();
         demoLink.addEventListener('click', function (e) {
           e.preventDefault();

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -51,8 +52,8 @@ class _VoucherSuccessPageState extends State<VoucherSuccessPage> {
       final imageFile = File(imagePath);
       await imageFile.writeAsBytes(imageBytes);
 
-      // Generate message text
-      final message = VoucherImageGenerator.generateVoucherMessage(voucher);
+      // Generate message with short URL
+      final message = await VoucherImageGenerator.generateVoucherShareMessageWithShortUrl(voucher);
 
       // Share image with text using share_plus
       await Share.shareXFiles(
@@ -94,9 +95,9 @@ class _VoucherSuccessPageState extends State<VoucherSuccessPage> {
       final imageFile = File(imagePath);
       await imageFile.writeAsBytes(imageBytes);
 
-      // Generate message text
+      // Generate message with short URL
       final subject = 'Gift Voucher from DSI Group';
-      final body = VoucherImageGenerator.generateVoucherMessage(voucher);
+      final body = await VoucherImageGenerator.generateVoucherShareMessageWithShortUrl(voucher);
 
       // Share image with text using share_plus
       // This will open the share sheet where user can choose email app
@@ -132,10 +133,12 @@ class _VoucherSuccessPageState extends State<VoucherSuccessPage> {
         final imageFile = File(imagePath);
         await imageFile.writeAsBytes(imageBytes);
 
-        // Share the file
+        // Share the file with voucher details and short viewer link
+        final message = await VoucherImageGenerator.generateVoucherShareMessageWithShortUrl(voucher);
         await Share.shareXFiles(
           [XFile(imagePath)],
-          text: 'Gift Voucher from DSI Group',
+          text: message,
+          subject: 'Gift Voucher from DSI Group',
         );
       }
     } catch (e) {
@@ -157,7 +160,7 @@ class _VoucherSuccessPageState extends State<VoucherSuccessPage> {
     });
 
     try {
-      final message = VoucherImageGenerator.generateVoucherMessage(voucher);
+      final message = await VoucherImageGenerator.generateVoucherShareMessageWithShortUrl(voucher);
       await Share.share(message);
     } catch (e) {
       if (mounted) {
@@ -169,6 +172,15 @@ class _VoucherSuccessPageState extends State<VoucherSuccessPage> {
           _isSharing = false;
         });
       }
+    }
+  }
+
+  Future<void> _copyVoucherViewerLink(Voucher voucher) async {
+    if (mounted) Toast.info(context, 'Shortening link…');
+    final url = await VoucherImageGenerator.getShortVoucherViewerUrl(voucher);
+    await Clipboard.setData(ClipboardData(text: url));
+    if (mounted) {
+      Toast.success(context, 'Short link copied. Share it so others can view voucher status online.');
     }
   }
 
@@ -405,6 +417,36 @@ class _VoucherSuccessPageState extends State<VoucherSuccessPage> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       side: const BorderSide(color: AppTheme.accentColor),
                       foregroundColor: AppTheme.accentColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // View voucher online – copy short link
+                Text(
+                  'View voucher online',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _copyVoucherViewerLink(voucher!),
+                    icon: const Icon(Icons.link_rounded, size: 20),
+                    label: Text(
+                      'Copy short link',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      side: const BorderSide(color: AppTheme.primaryColor),
+                      foregroundColor: AppTheme.primaryColor,
                     ),
                   ),
                 ),
