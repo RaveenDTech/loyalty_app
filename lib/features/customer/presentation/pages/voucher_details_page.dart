@@ -1,0 +1,312 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import '../../../../core/providers/voucher_provider.dart';
+import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/voucher_image_generator.dart';
+import '../../../../core/widgets/confirmation_dialog.dart';
+import '../../../../core/widgets/toast.dart';
+
+class VoucherDetailsPage extends StatelessWidget {
+  final String voucherId;
+  final bool isShared;
+
+  const VoucherDetailsPage({
+    super.key,
+    required this.voucherId,
+    this.isShared = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Voucher Details',
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: Consumer2<VoucherProvider, AuthProvider>(
+        builder: (context, voucherProvider, authProvider, _) {
+          final voucher = voucherProvider.getVoucherById(voucherId);
+          final userId = authProvider.userId.isEmpty ? 'customer_001' : authProvider.userId;
+          final canRedeemShared = isShared &&
+              voucher != null &&
+              voucherProvider.canCurrentUserRedeemSharedVoucher(voucherId, userId);
+
+          if (voucher == null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 80,
+                    color: AppTheme.errorColor,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Voucher not found',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final dateFormat = DateFormat('MMM dd, yyyy');
+          final timeFormat = DateFormat('hh:mm a');
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // Voucher Image Preview
+                VoucherImageGenerator.generateVoucherImage(voucher),
+
+                const SizedBox(height: 32),
+
+                // Voucher Details Card
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppTheme.borderColor,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Voucher Information',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _DetailRow(
+                        label: 'Voucher Code',
+                        value: voucher.voucherCode,
+                        valueStyle: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.primaryColor,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      const Divider(height: 24),
+                      _DetailRow(
+                        label: 'Vendor',
+                        value: voucher.vendorName,
+                      ),
+                      const Divider(height: 24),
+                      _DetailRow(
+                        label: 'Amount',
+                        value: 'Rs. ${voucher.amount.toStringAsFixed(2)}',
+                        valueStyle: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                      const Divider(height: 24),
+                      _DetailRow(
+                        label: 'Status',
+                        value: voucher.isExpired
+                            ? 'Expired'
+                            : voucher.isRedeemed
+                                ? 'Redeemed'
+                                : 'Active',
+                        valueColor: voucher.isExpired
+                            ? AppTheme.errorColor
+                            : voucher.isRedeemed
+                                ? AppTheme.textSecondary
+                                : AppTheme.successColor,
+                      ),
+                      const Divider(height: 24),
+                      _DetailRow(
+                        label: 'Purchased Date',
+                        value: '${dateFormat.format(voucher.purchasedAt)} at ${timeFormat.format(voucher.purchasedAt)}',
+                      ),
+                      if (voucher.expiresAt != null) ...[
+                        const Divider(height: 24),
+                        _DetailRow(
+                          label: 'Expires On',
+                          value: dateFormat.format(voucher.expiresAt!),
+                        ),
+                      ],
+                      if (voucher.redeemedAt != null) ...[
+                        const Divider(height: 24),
+                        _DetailRow(
+                          label: 'Redeemed On',
+                          value: '${dateFormat.format(voucher.redeemedAt!)} at ${timeFormat.format(voucher.redeemedAt!)}',
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Redeem button (shared voucher, valid, current user is recipient)
+                if (canRedeemShared)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final confirmed = await ConfirmationDialog.show(
+                          context: context,
+                          title: 'Redeem voucher',
+                          message:
+                              'This will use the voucher and it will expire for everyone else who received it. Continue?',
+                          icon: Icons.card_giftcard_rounded,
+                          iconColor: AppTheme.primaryColor,
+                          confirmText: 'Redeem',
+                          confirmColor: AppTheme.successColor,
+                          onConfirm: () => Navigator.pop(context, true),
+                          onCancel: () => Navigator.pop(context, false),
+                        );
+                        if (confirmed == true && context.mounted) {
+                          voucherProvider.redeemVoucher(voucher.id, userId);
+                          Toast.success(context, 'Voucher redeemed. It is now expired for all recipients.');
+                          if (context.mounted) Navigator.pop(context);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: AppTheme.successColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.check_circle_rounded, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Redeem voucher',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                // Share Button (if active and not viewing as shared recipient)
+                if (voucher.isActive && !canRedeemShared)
+                  SafeArea(
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          context.push(
+                            '/customer/voucher-success?voucherId=${voucher.id}',
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: AppTheme.primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.share_rounded, color: Colors.white),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Share Voucher',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final TextStyle? valueStyle;
+  final Color? valueColor;
+
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    this.valueStyle,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          flex: 2,
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            value,
+            style: valueStyle ??
+                GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: valueColor ?? AppTheme.textPrimary,
+                ),
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
+    );
+  }
+}
