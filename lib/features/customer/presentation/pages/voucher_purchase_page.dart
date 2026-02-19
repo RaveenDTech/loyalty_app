@@ -8,7 +8,9 @@ import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/models/vendor.dart';
 import '../../../../core/widgets/confirmation_dialog.dart';
+import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/toast.dart';
+import '../../../../core/utils/currency_format.dart';
 
 class VoucherPurchasePage extends StatefulWidget {
   final String vendorId;
@@ -122,10 +124,7 @@ class _VoucherPurchasePageState extends State<VoucherPurchasePage> {
   }
 
   String _formatAmount(double amount) {
-    if (amount >= 1000) {
-      return 'Rs. ${(amount / 1000).toStringAsFixed(amount % 1000 == 0 ? 0 : 1)}K';
-    }
-    return 'Rs. ${amount.toStringAsFixed(0)}';
+    return CurrencyFormat.rsShort(amount);
   }
 
   Future<void> _purchaseVoucher() async {
@@ -171,7 +170,7 @@ class _VoucherPurchasePageState extends State<VoucherPurchasePage> {
       context: context,
       title: 'Confirm Purchase',
       message:
-          'Purchase gift voucher worth Rs. ${_selectedAmount!.toStringAsFixed(2)} from ${vendor.name}?',
+          'Purchase gift voucher worth ${CurrencyFormat.rs(_selectedAmount!)} from ${vendor.name}?',
       icon: Icons.card_giftcard_rounded,
       iconColor: AppTheme.primaryColor,
       confirmText: 'Purchase',
@@ -252,9 +251,7 @@ class _VoucherPurchasePageState extends State<VoucherPurchasePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+      appBar: GlassAppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
@@ -267,7 +264,6 @@ class _VoucherPurchasePageState extends State<VoucherPurchasePage> {
             color: AppTheme.textPrimary,
           ),
         ),
-        centerTitle: true,
       ),
       body: Consumer2<VoucherProvider, AuthProvider>(
         builder: (context, voucherProvider, authProvider, _) {
@@ -409,7 +405,7 @@ class _VoucherPurchasePageState extends State<VoucherPurchasePage> {
                               ),
                               child: Center(
                                 child: Text(
-                                  'Rs. ${amount.toStringAsFixed(0)}',
+                                  CurrencyFormat.rsShort(amount),
                                   style: GoogleFonts.poppins(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -522,7 +518,7 @@ class _VoucherPurchasePageState extends State<VoucherPurchasePage> {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Minimum amount: Rs. 100',
+                                  'Minimum amount: ${CurrencyFormat.rs(100, decimalDigits: 0)}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 12,
                                     color: AppTheme.textSecondary,
@@ -531,7 +527,7 @@ class _VoucherPurchasePageState extends State<VoucherPurchasePage> {
                                 if (_selectedAmount != null && _selectedAmount! < 100) ...[
                                   const SizedBox(width: 8),
                                   Text(
-                                    '(Will be adjusted to Rs. 100)',
+                                    '(Will be adjusted to ${CurrencyFormat.rs(100, decimalDigits: 0)})',
                                     style: GoogleFonts.poppins(
                                       fontSize: 12,
                                       color: AppTheme.warningColor,

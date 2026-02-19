@@ -1,11 +1,14 @@
 import 'package:flutter/foundation.dart';
 import '../models/loyalty_request.dart';
 import '../models/transaction.dart';
+import '../models/dsi_loyalty_tier.dart';
 
 class LoyaltyProvider extends ChangeNotifier {
   List<LoyaltyRequest> _pendingRequests = [];
   List<LoyaltyRequest> _approvedRequests = [];
   List<Transaction> _transactions = [];
+  /// Customer ID -> years of employment at DSI group (for supplier bill discount lookup).
+  final Map<String, double> _customerTenureYears = {};
 
   List<LoyaltyRequest> get pendingRequests => _pendingRequests;
   List<LoyaltyRequest> get approvedRequests => _approvedRequests;
@@ -16,6 +19,10 @@ class LoyaltyProvider extends ChangeNotifier {
   }
 
   void _initializeMockData() {
+    // DSI Loyalty: employment tenure at DSI group (years) for discount tier
+    _customerTenureYears['customer_001'] = 3.0;  // 1–5 years → 10%
+    _customerTenureYears['customer_002'] = 7.0;   // 5–10 years → 15%
+    _customerTenureYears['customer_003'] = 12.0; // 10+ years → 20%
     // Initialize with mock data for demo
     _pendingRequests = [
       LoyaltyRequest(
@@ -200,5 +207,35 @@ class LoyaltyProvider extends ChangeNotifier {
 
   List<Transaction> getSupplierTransactions(String supplierId) {
     return _transactions.where((t) => t.supplierId == supplierId).toList();
+  }
+
+  // --- DSI Loyalty (employment tenure based discount) ---
+
+  /// Sets tenure for a customer (e.g. after login sync from auth).
+  void setCustomerTenure(String customerId, double years) {
+    _customerTenureYears[customerId] = years;
+    notifyListeners();
+  }
+
+  /// Returns tenure in years for a customer, or 0 if unknown.
+  double getTenureYearsForCustomer(String customerId) {
+    return _customerTenureYears[customerId] ?? 0;
+  }
+
+  /// Returns the DSI loyalty tier for a customer.
+  DsiTenureTier getTierForCustomer(String customerId) {
+    final years = _customerTenureYears[customerId] ?? 0;
+    return DsiLoyaltyTierHelper.tierFromYears(years);
+  }
+
+  /// Returns discount percentage for a customer (0–100).
+  int getDiscountPercentForCustomer(String customerId) {
+    return getTierForCustomer(customerId).discountPercent;
+  }
+
+  /// Returns suggested discount amount for a bill total based on customer's tier.
+  double getSuggestedDiscountForCustomer(String customerId, double billTotal) {
+    final tier = getTierForCustomer(customerId);
+    return DsiLoyaltyTierHelper.discountAmount(billTotal, tier);
   }
 }

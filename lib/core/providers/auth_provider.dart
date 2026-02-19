@@ -7,12 +7,15 @@ class AuthProvider extends ChangeNotifier {
   String _userId = '';
   String _userName = '';
   String _userEmail = '';
+  /// Years of employment at DSI group companies (customers only). Used for loyalty tier.
+  double _employmentTenureYears = 0;
 
   bool get isAuthenticated => _isAuthenticated;
   String get userRole => _userRole;
   String get userId => _userId;
   String get userName => _userName;
   String get userEmail => _userEmail;
+  double get employmentTenureYears => _employmentTenureYears;
 
   AuthProvider() {
     _loadAuthState();
@@ -25,6 +28,7 @@ class AuthProvider extends ChangeNotifier {
     _userId = prefs.getString('userId') ?? '';
     _userName = prefs.getString('userName') ?? '';
     _userEmail = prefs.getString('userEmail') ?? '';
+    _employmentTenureYears = prefs.getDouble('employmentTenureYears') ?? 0;
     notifyListeners();
   }
 
@@ -34,16 +38,19 @@ class AuthProvider extends ChangeNotifier {
       await Future.delayed(const Duration(seconds: 1));
       
       // Dummy login credentials for demo - role is determined by email/credentials
+      // employmentTenureYears: years at DSI group for DSI Loyalty discount tier
       final dummyUsers = {
         'customer@demo.com': {
           'password': 'Dsi123',
           'name': 'John Customer',
           'role': 'customer',
+          'employmentTenureYears': 3.0,
         },
         'supplier@demo.com': {
           'password': 'Dsi123',
           'name': 'ABC Store',
           'role': 'supplier',
+          'employmentTenureYears': 0.0,
         },
       };
       
@@ -51,18 +58,21 @@ class AuthProvider extends ChangeNotifier {
       if (user != null && password == user['password']) {
         final prefs = await SharedPreferences.getInstance();
         final role = user['role'] as String;
+        final tenure = (user['employmentTenureYears'] as num?)?.toDouble() ?? 0.0;
         
         _isAuthenticated = true;
         _userRole = role;
         _userId = role == 'customer' ? 'customer_001' : 'supplier_001';
-        _userName = user['name']!;
+        _userName = user['name'] as String;
         _userEmail = email.toLowerCase();
+        _employmentTenureYears = tenure;
         
         await prefs.setBool('isAuthenticated', true);
         await prefs.setString('userRole', role);
         await prefs.setString('userId', _userId);
         await prefs.setString('userName', _userName);
         await prefs.setString('userEmail', _userEmail);
+        await prefs.setDouble('employmentTenureYears', _employmentTenureYears);
         
         notifyListeners();
         return true;
@@ -83,6 +93,7 @@ class AuthProvider extends ChangeNotifier {
     _userId = '';
     _userName = '';
     _userEmail = '';
+    _employmentTenureYears = 0;
     
     notifyListeners();
   }

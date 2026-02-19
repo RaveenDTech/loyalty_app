@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/notification_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/toast.dart';
 import '../../../supplier/presentation/widgets/empty_state_card.dart';
 
@@ -12,14 +13,11 @@ class NotificationsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const Color _bgTop = Color(0xFF080E27);
 
     return Scaffold(
-      backgroundColor: _bgTop,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+      backgroundColor: AppTheme.backgroundColor,
+      extendBodyBehindAppBar: true ,
+      appBar: GlassAppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.of(context).pop(),
@@ -30,7 +28,6 @@ class NotificationsPage extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        centerTitle: true,
         actions: [
           Consumer<NotificationProvider>(
             builder: (context, notificationProvider, _) {

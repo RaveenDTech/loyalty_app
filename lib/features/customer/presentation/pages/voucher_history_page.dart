@@ -8,6 +8,8 @@ import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/models/voucher.dart';
 import '../../../../core/models/shared_voucher.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/currency_format.dart';
+import '../../../../core/widgets/glass_app_bar.dart';
 
 class VoucherHistoryPage extends StatefulWidget {
   const VoucherHistoryPage({super.key});
@@ -19,14 +21,37 @@ class VoucherHistoryPage extends StatefulWidget {
 class _VoucherHistoryPageState extends State<VoucherHistoryPage> {
   String _filterStatus = 'All'; // All, Active, Redeemed, Expired
   bool _showSharedWithMe = false; // Tab: My Vouchers vs Shared with me
+  bool _isLoadingHistory = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // WidgetsBinding.instance.addPostFrameCallback((_) => _refreshStatusFromSheetOnLoad());
+  }
+
+  Future<void> _refreshStatusFromSheetOnLoad() async {
+    if (!mounted) return;
+    final voucherProvider = context.read<VoucherProvider>();
+    final authProvider = context.read<AuthProvider>();
+    final userId = _resolveCustomerId(authProvider);
+    final customerVouchers = voucherProvider.getCustomerVouchers(userId);
+    final sharedList = voucherProvider.getSharedVouchersForUser(userId);
+    final sharedVouchers = sharedList.map((e) => e.voucher).toList();
+    final allVouchers = [...customerVouchers, ...sharedVouchers];
+    if (allVouchers.isEmpty) {
+      if (mounted) setState(() => _isLoadingHistory = false);
+      return;
+    }
+    await voucherProvider.refreshAllVouchersStatusFromSheet(allVouchers);
+    if (mounted) setState(() => _isLoadingHistory = false);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+      extendBodyBehindAppBar: true ,
+      appBar: GlassAppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
@@ -39,7 +64,6 @@ class _VoucherHistoryPageState extends State<VoucherHistoryPage> {
             color: AppTheme.textPrimary,
           ),
         ),
-        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.add_rounded),
@@ -48,36 +72,69 @@ class _VoucherHistoryPageState extends State<VoucherHistoryPage> {
           ),
         ],
       ),
-      body: Consumer2<VoucherProvider, AuthProvider>(
+      body: _isLoadingHistory
+          ? SafeArea(
+            child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(
+                      color: AppTheme.primaryColor,
+                      strokeWidth: 2.5,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Loading voucher history…',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: AppTheme.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          )
+          : Consumer2<VoucherProvider, AuthProvider>(
         builder: (context, voucherProvider, authProvider, _) {
           // customer@demo.com (demo customer) always uses customer_001 for Shared with me & vouchers
           final userId = _resolveCustomerId(authProvider);
 
           if (_showSharedWithMe) {
             final sharedList = voucherProvider.getSharedVouchersForUser(userId);
-            return Column(
-              children: [
-                _buildSegmentBar(),
-                Expanded(
-                  child: sharedList.isEmpty
-                      ? _buildEmptyShared()
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: sharedList.length,
-                          itemBuilder: (context, index) {
-                            final item = sharedList[index];
-                            return _SharedVoucherCard(
-                              item: item,
-                              onTap: () {
-                                context.push(
-                                  '/customer/voucher-details?voucherId=${item.voucher.id}&shared=true',
+            return SafeArea(
+              child: Column(
+                children: [
+                  _buildSegmentBar(),
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        if (sharedList.isEmpty) return;
+                        await voucherProvider.refreshAllVouchersStatusFromSheet(
+                          sharedList.map((e) => e.voucher).toList(),
+                        );
+                      },
+                      child: sharedList.isEmpty
+                          ? _buildEmptyShared()
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: sharedList.length,
+                              itemBuilder: (context, index) {
+                                final item = sharedList[index];
+                                return _SharedVoucherCard(
+                                  item: item,
+                                  onTap: () {
+                                    context.push(
+                                      '/customer/voucher-details?voucherId=${item.voucher.id}&shared=true',
+                                    );
+                                  },
                                 );
                               },
-                            );
-                          },
-                        ),
-                ),
-              ],
+                            ),
+                    ),
+                  ),
+                ],
+              ),
             );
           }
 
@@ -92,132 +149,149 @@ class _VoucherHistoryPageState extends State<VoucherHistoryPage> {
                 case 'Redeemed':
                   return v.isRedeemed;
                 case 'Expired':
-                  return v.isExpired || v.status == VoucherStatus.expired;
+                  return v.isExpired && !v.isRedeemed;
                 default:
                   return true;
               }
             }).toList();
           }
 
-          return Column(
-            children: [
-              _buildSegmentBar(),
-              // Filter Chips (only for My Vouchers)
-              SizedBox(
-                height: 50,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: ['All', 'Active', 'Redeemed', 'Expired'].length,
-                  itemBuilder: (context, index) {
-                    final status = ['All', 'Active', 'Redeemed', 'Expired'][index];
-                    final isSelected = _filterStatus == status;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: FilterChip(
-                        label: Text(status),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          setState(() {
-                            _filterStatus = status;
-                          });
-                        },
-                        selectedColor: AppTheme.primaryColor.withOpacity(0.2),
-                        checkmarkColor: AppTheme.primaryColor,
-                        labelStyle: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected
-                              ? AppTheme.primaryColor
-                              : AppTheme.textSecondary,
+          return SafeArea(
+            child: Column(
+              children: [
+                _buildSegmentBar(),
+                // Filter Chips (only for My Vouchers)
+                SizedBox(
+                  height: 50,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    itemCount: ['All', 'Active', 'Redeemed', 'Expired'].length,
+                    itemBuilder: (context, index) {
+                      final status = ['All', 'Active', 'Redeemed', 'Expired'][index];
+                      final isSelected = _filterStatus == status;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: FilterChip(
+                          label: Text(status),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              _filterStatus = status;
+                            });
+                          },
+                          selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+                          checkmarkColor: AppTheme.primaryColor,
+                          labelStyle: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected
+                                ? AppTheme.primaryColor
+                                : AppTheme.textSecondary,
+                          ),
+                          side: BorderSide(
+                            color: isSelected
+                                ? AppTheme.primaryColor
+                                : AppTheme.borderColor,
+                            width: 1.5,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
                         ),
-                        side: BorderSide(
-                          color: isSelected
-                              ? AppTheme.primaryColor
-                              : AppTheme.borderColor,
-                          width: 1.5,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
 
-              // Voucher List
-              Expanded(
-                child: vouchers.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.card_giftcard_outlined,
-                              size: 80,
-                              color: AppTheme.textSecondary,
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              'No vouchers found',
-                              style: GoogleFonts.poppins(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Purchase a gift voucher to get started',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: AppTheme.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            ElevatedButton(
-                              onPressed: () => context.push('/customer/vendor-selection'),
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 32,
-                                  vertical: 16,
+                // Voucher List (pull to refresh syncs status from Google Sheet)
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      final all = voucherProvider.getCustomerVouchers(userId);
+                      await voucherProvider.refreshAllVouchersStatusFromSheet(all);
+                    },
+                    child: vouchers.isEmpty
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: [
+                              SizedBox(
+                                height: 400,
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.card_giftcard_outlined,
+                                        size: 80,
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                      const SizedBox(height: 24),
+                                      Text(
+                                        'No vouchers found',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppTheme.textPrimary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Purchase a gift voucher to get started',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 32),
+                                      ElevatedButton(
+                                        onPressed: () =>
+                                            context.push('/customer/vendor-selection'),
+                                        style: ElevatedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 32,
+                                            vertical: 16,
+                                          ),
+                                          backgroundColor: AppTheme.primaryColor,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Buy Voucher',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                backgroundColor: AppTheme.primaryColor,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
                               ),
-                              child: Text(
-                                'Buy Voucher',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: vouchers.length,
-                        itemBuilder: (context, index) {
-                          final voucher = vouchers[index];
-                          return _VoucherCard(
-                            voucher: voucher,
-                            onTap: () {
-                              context.push(
-                                '/customer/voucher-details?voucherId=${voucher.id}',
+                            ],
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: vouchers.length,
+                            itemBuilder: (context, index) {
+                              final voucher = vouchers[index];
+                              return _VoucherCard(
+                                voucher: voucher,
+                                onTap: () {
+                                  context.push(
+                                    '/customer/voucher-details?voucherId=${voucher.id}',
+                                  );
+                                },
                               );
                             },
-                          );
-                        },
-                      ),
-              ),
-            ],
+                          ),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -234,7 +308,7 @@ class _VoucherHistoryPageState extends State<VoucherHistoryPage> {
 
   Widget _buildSegmentBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: Row(
         children: [
           Expanded(
@@ -294,7 +368,7 @@ class _VoucherHistoryPageState extends State<VoucherHistoryPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.people_outline_rounded,
             size: 80,
             color: AppTheme.textSecondary,
@@ -336,31 +410,46 @@ class _SharedVoucherCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final voucher = item.voucher;
     final isAvailable = item.isAvailable;
-    final statusColor = item.isExpired ? AppTheme.errorColor : AppTheme.successColor;
+    final statusText = item.statusDisplay;
+    final statusColor = statusText == 'Valid'
+        ? AppTheme.successColor
+        : statusText == 'Redeemed'
+            ? AppTheme.textSecondary
+            : AppTheme.errorColor;
+    final statusIcon = statusText == 'Valid' || statusText == 'Redeemed'
+        ? Icons.check_circle_rounded
+        : Icons.cancel_rounded;
     final dateFormat = DateFormat('MMM dd, yyyy');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.08),
+          width: 1.2,
+        ),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.primaryColor.withOpacity(0.1),
-            AppTheme.accentColor.withOpacity(0.05),
+            AppTheme.accentColor.withOpacity(0.08),
+            AppTheme.surfaceColor,
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppTheme.borderColor,
-          width: 1.5,
-        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.accentColor.withOpacity(0.06),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(22),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -369,23 +458,30 @@ class _SharedVoucherCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      width: 50,
-                      height: 50,
+                      width: 52,
+                      height: 52,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            AppTheme.primaryColor,
-                            AppTheme.primaryColor.withOpacity(0.7),
+                            AppTheme.accentColor,
+                            AppTheme.accentColor.withOpacity(0.75),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.accentColor.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: const Icon(
-                        Icons.store_rounded,
+                        Icons.ios_share_rounded,
                         color: Colors.white,
-                        size: 24,
+                        size: 26,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -418,20 +514,20 @@ class _SharedVoucherCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.15),
+                        color: statusColor.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: statusColor.withOpacity(0.3),
+                          width: 1,
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            isAvailable ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                            size: 14,
-                            color: statusColor,
-                          ),
+                          Icon(statusIcon, size: 14, color: statusColor),
                           const SizedBox(width: 4),
                           Text(
-                            item.statusDisplay,
+                            statusText,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -443,7 +539,7 @@ class _SharedVoucherCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -459,11 +555,11 @@ class _SharedVoucherCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Rs. ${voucher.amount.toStringAsFixed(2)}',
+                          CurrencyFormat.rs(voucher.amount),
                           style: GoogleFonts.poppins(
                             fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.accentColor,
                           ),
                         ),
                       ],
@@ -510,20 +606,20 @@ class _VoucherCard extends StatelessWidget {
   });
 
   Color _getStatusColor() {
-    if (voucher.isExpired) return AppTheme.errorColor;
     if (voucher.isRedeemed) return AppTheme.textSecondary;
+    if (voucher.isExpired) return AppTheme.errorColor;
     return AppTheme.successColor;
   }
 
   String _getStatusText() {
-    if (voucher.isExpired) return 'Expired';
     if (voucher.isRedeemed) return 'Redeemed';
+    if (voucher.isExpired) return 'Expired';
     return 'Active';
   }
 
   IconData _getStatusIcon() {
-    if (voucher.isExpired) return Icons.cancel_rounded;
     if (voucher.isRedeemed) return Icons.check_circle_rounded;
+    if (voucher.isExpired) return Icons.cancel_rounded;
     return Icons.card_giftcard_rounded;
   }
 
@@ -659,7 +755,7 @@ class _VoucherCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Rs. ${voucher.amount.toStringAsFixed(2)}',
+                          CurrencyFormat.rs(voucher.amount),
                           style: GoogleFonts.poppins(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -695,7 +791,7 @@ class _VoucherCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.calendar_today_rounded,
                         size: 14,
                         color: AppTheme.textSecondary,

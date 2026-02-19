@@ -52,8 +52,10 @@ class SharedVoucherWithVoucher {
     required this.voucher,
   });
 
-  /// Valid = active and not expired; Expired = redeemed or past expiry.
+  /// Valid = active and not expired; Expired = past expiry only; Redeemed = used.
   bool get isAvailable => voucher.isActive;
-  bool get isExpired => voucher.isRedeemed || voucher.isExpired;
-  String get statusDisplay => isExpired ? 'Expired' : 'Valid';
+  bool get isExpired => voucher.isExpired;
+  bool get isRedeemed => voucher.isRedeemed;
+  String get statusDisplay =>
+      voucher.isRedeemed ? 'Redeemed' : (voucher.isExpired ? 'Expired' : 'Valid');
 }

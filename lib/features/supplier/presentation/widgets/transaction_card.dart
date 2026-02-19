@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/currency_format.dart';
 
 class TransactionCard extends StatelessWidget {
   final dynamic transaction;
@@ -12,8 +13,7 @@ class TransactionCard extends StatelessWidget {
   });
 
   String _money(double amount) {
-    final fmt = NumberFormat.currency(symbol: 'LKR ', decimalDigits: 0);
-    return fmt.format(amount);
+    return CurrencyFormat.lkr(amount, decimalDigits: 0);
   }
 
   @override

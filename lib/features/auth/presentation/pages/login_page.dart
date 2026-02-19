@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:icons_plus/icons_plus.dart';
@@ -131,349 +132,376 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.backgroundColor,
-              AppTheme.primaryDark,
-              AppTheme.primaryColor.withOpacity(0.8),
-            ],
-            stops: const [0.0, 0.6, 1.0],
+    return AnnotatedRegion(
+      value: const SystemUiOverlayStyle(
+          systemNavigationBarColor: Color(0xFF2A69DF),
+          systemNavigationBarIconBrightness: Brightness.light,
+          statusBarIconBrightness: Brightness.light, systemNavigationBarContrastEnforced: false,),
+      child: Scaffold(
+        extendBody: true,
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppTheme.backgroundColor,
+                AppTheme.primaryDark,
+                AppTheme.primaryColor.withOpacity(0.8),
+              ],
+              stops: const [0.0, 0.6, 1.0],
+            ),
           ),
-        ),
-        child: Stack(
-          children: [
-            // Animated wave background
-            AnimatedBuilder(
-              animation: _waveController,
-              builder: (context, child) {
-                return Positioned.fill(
-                  child: CustomPaint(
-                    painter: _LoginWavePainter(
-                      waveValue: _waveAnimation.value,
-                      primaryColor: AppTheme.primaryColor,
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            // Floating particles
-            AnimatedBuilder(
-              animation: _particleController,
-              builder: (context, child) {
-                return _LoginFloatingParticles(
-                  animationValue: _particleController.value,
-                );
-              },
-            ),
-
-            /// ===== CONTENT =====
-            SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 40),
-
-                            /// LOGO + TITLE
-                            AnimatedBuilder(
-                              animation: _logoController,
-                              builder: (context, child) {
-                                return Transform.scale(
-                                  scale: _logoScaleAnimation.value,
-                                  child: Opacity(
-                                    opacity: _logoFadeAnimation.value,
-                                    child: Column(
-                                      children: [
-                                        // Geometric Logo
-                                        Container(
-                                          width: 80,
-                                          height: 80,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(20),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: AppTheme.primaryColor.withOpacity(0.4),
-                                                blurRadius: 30,
-                                                spreadRadius: 5,
-                                                offset: const Offset(0, 10),
-                                              ),
-                                            ],
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(20),
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                  colors: [
-                                                    AppTheme.primaryColor,
-                                                    AppTheme.primaryColor.withOpacity(0.7),
-                                                  ],
-                                                ),
-                                              ),
-                                              child: const Icon(
-                                                Icons.star_rounded,
-                                                size: 50,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 24),
-                                        // App Name
-                                        Text(
-                                          'DSI',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 30,
-                                            fontWeight: FontWeight.w800,
-                                            color: Colors.white,
-                                            letterSpacing: 2,
-                                            height: 1,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          'LOYALTY',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.white.withOpacity(0.9),
-                                            letterSpacing: 4,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Container(
-                                          height: 3,
-                                          width: 60,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                AppTheme.primaryColor,
-                                                Colors.white.withOpacity(0.5),
-                                              ],
-                                            ),
-                                            borderRadius: BorderRadius.circular(2),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 32),
-                                        Text(
-                                          'Welcome Back',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          'Sign in to continue',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w400,
-                                            color: Colors.white.withOpacity(0.8),
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-
-                            const SizedBox(height: 40),
-
-                            /// SOCIAL LOGIN
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: Row(
-                                children: [
-                                  _glassSocialButton(
-                                    icon: Brands.google,
-                                    text: 'Google',
-                                    onTap: () {},
-                                  ),
-                                  const SizedBox(width: 8),
-                                  _glassSocialButton(
-                                    icon: Brands.apple_logo,
-                                    text: 'Apple',
-                                    onTap: () {},
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 25),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                      child: Divider(
-                                    thickness: 1,
-                                    color: Colors.grey.withOpacity(0.2),
-                                  )),
-                                  const SizedBox(width: 10),
-                                  const Text(
-                                    'Or',
-                                    style: TextStyle(color: Colors.white60),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                      child: Divider(
-                                    thickness: 1,
-                                    color: Colors.grey.withOpacity(0.2),
-                                  )),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            /// INPUTS
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: Column(
-                                children: [
-                                  _glassInput(
-                                    hint: 'Email address',
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                  ),
-                                  const SizedBox(height: 18),
-                                  _glassInput(
-                                    hint: 'Password',
-                                    controller: _passwordController,
-                                    obscure: _obscurePassword,
-                                    onSubmit: (_){
-                                      _handleLogin();
-                                    },
-                                    suffix: IconButton(
-                                      icon: Icon(
-                                        _obscurePassword
-                                            ? Icons.visibility_outlined
-                                            : Icons.visibility_off_outlined,
-                                        color: Colors.white70,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _obscurePassword = !_obscurePassword;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            /// FORGOT PASSWORD
-                            Padding(
-                              padding:
-                                  const EdgeInsets.only(right: 28, top: 14, bottom: 24),
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  'Forgot Password?',
-                                  style: TextStyle(
-                                    color: Colors.blue.shade200,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            /// LOGIN BUTTON
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24),
-                              child: _glassLoginButton(
-                                onTap: _handleLogin,
-                                isLoading: _isLoading,
-                              ),
-                            ),
-
-                            // Spacer to push sign up to bottom
-                            const Spacer(),
-
-                            /// SIGN UP - Always at bottom
-                            Padding(
-                              padding: const EdgeInsets.only(top: 20, bottom: 10),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Don\'t have an account? ',
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white.withOpacity(0.7),
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  AnimatedScale(
-                                    duration: const Duration(milliseconds: 120),
-                                    curve: Curves.easeOut,
-                                    scale: _signUpPressed ? 0.98 : 1,
-                                    child: AnimatedOpacity(
-                                      duration: const Duration(milliseconds: 120),
-                                      opacity: _signUpPressed ? 0.85 : 1,
-                                      child: Material(
-                                        type: MaterialType.transparency,
-                                        child: InkWell(
-                                          onTap: () {
-                                            // TODO: navigate to sign up page
-                                          },
-                                          onHighlightChanged: (isHighlighted) {
-                                            if (!mounted) return;
-                                            setState(() {
-                                              _signUpPressed = isHighlighted;
-                                            });
-                                          },
-                                          borderRadius: BorderRadius.circular(30),
-                                          splashColor: Colors.white.withOpacity(0.10),
-                                          highlightColor: Colors.white.withOpacity(0.06),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 6,
-                                            ),
-                                            child: Text(
-                                              'SIGN UP',
-                                              style: GoogleFonts.poppins(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+          child: Stack(
+            children: [
+              // Animated wave background
+              AnimatedBuilder(
+                animation: _waveController,
+                builder: (context, child) {
+                  return Positioned.fill(
+                    child: CustomPaint(
+                      painter: _LoginWavePainter(
+                        waveValue: _waveAnimation.value,
+                        primaryColor: AppTheme.primaryColor,
                       ),
                     ),
                   );
                 },
               ),
-            ),
-          ],
+
+              // Floating particles
+              AnimatedBuilder(
+                animation: _particleController,
+                builder: (context, child) {
+                  return _LoginFloatingParticles(
+                    animationValue: _particleController.value,
+                  );
+                },
+              ),
+
+              /// ===== CONTENT =====
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                        ),
+                        child: IntrinsicHeight(
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 40),
+
+                              /// LOGO + TITLE
+                              AnimatedBuilder(
+                                animation: _logoController,
+                                builder: (context, child) {
+                                  return Transform.scale(
+                                    scale: _logoScaleAnimation.value,
+                                    child: Opacity(
+                                      opacity: _logoFadeAnimation.value,
+                                      child: Column(
+                                        children: [
+                                          // Geometric Logo
+                                          Container(
+                                            width: 80,
+                                            height: 80,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: AppTheme.primaryColor
+                                                      .withOpacity(0.4),
+                                                  blurRadius: 30,
+                                                  spreadRadius: 5,
+                                                  offset: const Offset(0, 10),
+                                                ),
+                                              ],
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                    colors: [
+                                                      AppTheme.primaryColor,
+                                                      AppTheme.primaryColor
+                                                          .withOpacity(0.7),
+                                                    ],
+                                                  ),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.star_rounded,
+                                                  size: 50,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 24),
+                                          // App Name
+                                          Text(
+                                            'DSI',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 30,
+                                              fontWeight: FontWeight.w800,
+                                              color: Colors.white,
+                                              letterSpacing: 2,
+                                              height: 1,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'LOYALTY',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color:
+                                                  Colors.white.withOpacity(0.9),
+                                              letterSpacing: 4,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Container(
+                                            height: 3,
+                                            width: 60,
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  AppTheme.primaryColor,
+                                                  Colors.white.withOpacity(0.5),
+                                                ],
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(2),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 32),
+                                          Text(
+                                            'Welcome Back',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Sign in to continue',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w400,
+                                              color:
+                                                  Colors.white.withOpacity(0.8),
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+
+                              const SizedBox(height: 40),
+
+                              /// SOCIAL LOGIN
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 24),
+                                child: Row(
+                                  children: [
+                                    _glassSocialButton(
+                                      icon: Brands.google,
+                                      text: 'Google',
+                                      onTap: () {},
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _glassSocialButton(
+                                      icon: Brands.apple_logo,
+                                      text: 'Apple',
+                                      onTap: () {},
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 25),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                        child: Divider(
+                                      thickness: 1,
+                                      color: Colors.grey.withOpacity(0.2),
+                                    )),
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      'Or',
+                                      style: TextStyle(color: Colors.white60),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                        child: Divider(
+                                      thickness: 1,
+                                      color: Colors.grey.withOpacity(0.2),
+                                    )),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              /// INPUTS
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 24),
+                                child: Column(
+                                  children: [
+                                    _glassInput(
+                                      hint: 'Email address',
+                                      controller: _emailController,
+                                      keyboardType: TextInputType.emailAddress,
+                                    ),
+                                    const SizedBox(height: 18),
+                                    _glassInput(
+                                      hint: 'Password',
+                                      controller: _passwordController,
+                                      obscure: _obscurePassword,
+                                      onSubmit: (_) {
+                                        _handleLogin();
+                                      },
+                                      suffix: IconButton(
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
+                                          color: Colors.white70,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _obscurePassword =
+                                                !_obscurePassword;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              /// FORGOT PASSWORD
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    right: 28, top: 14, bottom: 24),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    'Forgot Password?',
+                                    style: TextStyle(
+                                      color: Colors.blue.shade200,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              /// LOGIN BUTTON
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 24),
+                                child: _glassLoginButton(
+                                  onTap: _handleLogin,
+                                  isLoading: _isLoading,
+                                ),
+                              ),
+
+                              // Spacer to push sign up to bottom
+                              const Spacer(),
+
+                              /// SIGN UP - Always at bottom
+                              Padding(
+                                padding:
+                                    const EdgeInsets.only(top: 20, bottom: 10),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Don\'t have an account? ',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white.withOpacity(0.7),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    AnimatedScale(
+                                      duration:
+                                          const Duration(milliseconds: 120),
+                                      curve: Curves.easeOut,
+                                      scale: _signUpPressed ? 0.98 : 1,
+                                      child: AnimatedOpacity(
+                                        duration:
+                                            const Duration(milliseconds: 120),
+                                        opacity: _signUpPressed ? 0.85 : 1,
+                                        child: Material(
+                                          type: MaterialType.transparency,
+                                          child: InkWell(
+                                            onTap: () {
+                                              // TODO: navigate to sign up page
+                                            },
+                                            onHighlightChanged:
+                                                (isHighlighted) {
+                                              if (!mounted) return;
+                                              setState(() {
+                                                _signUpPressed = isHighlighted;
+                                              });
+                                            },
+                                            borderRadius:
+                                                BorderRadius.circular(30),
+                                            splashColor:
+                                                Colors.white.withOpacity(0.10),
+                                            highlightColor:
+                                                Colors.white.withOpacity(0.06),
+                                            child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 10,
+                                                vertical: 6,
+                                              ),
+                                              child: Text(
+                                                'SIGN UP',
+                                                style: GoogleFonts.poppins(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -515,7 +543,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           enabledBorder: OutlineInputBorder(
             borderRadius: borderRadius,
             borderSide: BorderSide(
-              color: Colors.white.withOpacity(0.25),
+              color: Colors.white.withOpacity(0.5),
               width: 1,
             ),
           ),
@@ -682,7 +710,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
             height: 56,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(30),
-
               gradient: LinearGradient(
                 begin: Alignment.bottomCenter,
                 end: Alignment.topCenter,
@@ -724,7 +751,6 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       ),
     );
   }
-
 }
 
 // Custom painter for wave effect in login
@@ -754,8 +780,8 @@ class _LoginWavePainter extends CustomPainter {
 
       for (double x = 0; x <= size.width; x++) {
         final y = waveHeight *
-                math.sin((x / waveLength * 2 * math.pi) +
-                    (waveValue + i * 0.5)) +
+                math.sin(
+                    (x / waveLength * 2 * math.pi) + (waveValue + i * 0.5)) +
             size.height * 0.7 +
             i * 30;
         path.lineTo(x, y);
@@ -784,7 +810,7 @@ class _LoginFloatingParticles extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    
+
     return Stack(
       children: List.generate(8, (index) {
         final delay = index * 0.2;

@@ -149,7 +149,10 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion(
-      value: SystemUiOverlayStyle.light,
+      value: const SystemUiOverlayStyle(
+        systemNavigationBarColor: Color(0xFF2A69DF),
+        systemNavigationBarIconBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.light,),
       child: Scaffold(
         body: Container(
           decoration: BoxDecoration(

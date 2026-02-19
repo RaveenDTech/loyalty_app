@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/confirmation_dialog.dart';
+import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/toast.dart';
 
 class SupplierProfilePage extends StatelessWidget {
@@ -16,10 +17,8 @@ class SupplierProfilePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: _bgTop,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+      extendBodyBehindAppBar: true ,
+      appBar: GlassAppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.of(context).pop(),
@@ -30,7 +29,6 @@ class SupplierProfilePage extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        centerTitle: true,
       ),
       body: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {

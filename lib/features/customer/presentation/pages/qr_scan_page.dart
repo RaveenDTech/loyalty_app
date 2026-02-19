@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +11,7 @@ import '../../../../core/providers/notification_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/qr_generator.dart';
 import '../../../../core/widgets/confirmation_dialog.dart';
+import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/toast.dart';
 
 class QRScanPage extends StatefulWidget {
@@ -523,16 +526,10 @@ class _QRScanPageState extends State<QRScanPage>
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.5),
-            shape: BoxShape.circle,
-          ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -540,11 +537,20 @@ class _QRScanPageState extends State<QRScanPage>
           'Scan QR Code',
           style: GoogleFonts.poppins(
             fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             color: Colors.white,
           ),
         ),
-        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(
+              _flashEnabled ? Icons.flash_on : Icons.flash_off,
+              color: _flashEnabled ? AppTheme.primaryColor : Colors.white70,
+            ),
+            onPressed: _toggleFlash,
+            tooltip: _flashEnabled ? 'Turn off flash' : 'Turn on flash',
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -628,7 +634,7 @@ class _QRScanPageState extends State<QRScanPage>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.camera_alt_outlined,
                         size: 80,
                         color: AppTheme.errorColor,
@@ -692,7 +698,7 @@ class _QRScanPageState extends State<QRScanPage>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.camera_alt_outlined,
                         size: 80,
                         color: AppTheme.textSecondary,
@@ -757,13 +763,13 @@ class _QRScanPageState extends State<QRScanPage>
             left: 0,
             right: 0,
             child: Container(
-              decoration: BoxDecoration(
+              decoration:  BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.9),
+                    Colors.black.withOpacity(0.1),
                     Colors.black,
                   ],
                 ),
@@ -774,85 +780,68 @@ class _QRScanPageState extends State<QRScanPage>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Flashlight Toggle Button
-                      Container(
-                        decoration: BoxDecoration(
-                          color: _flashEnabled
-                              ? AppTheme.primaryColor.withOpacity(0.2)
-                              : AppTheme.surfaceColor.withOpacity(0.8),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: _flashEnabled
-                                ? AppTheme.primaryColor
-                                : AppTheme.borderColor,
-                            width: 2,
-                          ),
-                        ),
-                        child: IconButton(
-                          icon: Icon(
-                            _flashEnabled
-                                ? Icons.flash_on
-                                : Icons.flash_off,
-                            color: _flashEnabled
-                                ? AppTheme.primaryColor
-                                : AppTheme.textSecondary,
-                            size: 28,
-                          ),
-                          onPressed: _toggleFlash,
-                          iconSize: 28,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Instructions
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor.withOpacity(0.95),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: AppTheme.borderColor,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                      // Instructions — glassmorphism
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(25),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.12),
+                                width: 1.2,
+                              ),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  AppTheme.surfaceColor.withOpacity(0.0),
+                                  AppTheme.surfaceColor.withOpacity(0.1),
+                                ],
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.all(12),
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
+                                    color: AppTheme.primaryColor.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(25),
                                   ),
                                   child: const Icon(
                                     Icons.qr_code_scanner,
-                                    size: 32,
+                                    size: 26,
                                     color: AppTheme.primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Position QR code within the frame',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'The scanner will automatically detect the code',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 13,
+                                    color: AppTheme.textSecondary,
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Position QR code within the frame',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'The scanner will automatically detect the code',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                color: AppTheme.textSecondary,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     ],
@@ -877,60 +866,48 @@ class ScannerOverlayPainter extends CustomPainter {
     required this.animation,
   }) : super(repaint: animation);
 
+  static const double _cornerRadius = 35.0;
+
   @override
   void paint(Canvas canvas, Size size) {
     final centerX = size.width / 2;
     final centerY = size.height / 2;
     final halfScanArea = scanArea / 2;
 
-    // Draw dark overlay around scan area
+    // Rounded rectangle for the scan area (hole in the overlay)
+    final scanRect = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(centerX, centerY),
+        width: scanArea,
+        height: scanArea,
+      ),
+      const Radius.circular(_cornerRadius),
+    );
+
+    // Draw dark overlay with rounded rectangular cutout
     final overlayPaint = Paint()
       ..color = Colors.black.withOpacity(0.7)
       ..style = PaintingStyle.fill;
 
-    // Draw overlay rectangles (top, bottom, left, right)
-    // Top
-    if (centerY - halfScanArea > 0) {
-      canvas.drawRect(
-        Rect.fromLTWH(0, 0, size.width, centerY - halfScanArea),
-        overlayPaint,
-      );
-    }
-    // Bottom
-    if (centerY + halfScanArea < size.height) {
-      canvas.drawRect(
-        Rect.fromLTWH(0, centerY + halfScanArea, size.width, size.height - (centerY + halfScanArea)),
-        overlayPaint,
-      );
-    }
-    // Left
-    if (centerX - halfScanArea > 0) {
-      canvas.drawRect(
-        Rect.fromLTWH(0, centerY - halfScanArea, centerX - halfScanArea, scanArea),
-        overlayPaint,
-      );
-    }
-    // Right
-    if (centerX + halfScanArea < size.width) {
-      canvas.drawRect(
-        Rect.fromLTWH(centerX + halfScanArea, centerY - halfScanArea, size.width - (centerX + halfScanArea), scanArea),
-        overlayPaint,
-      );
-    }
+    final fullScreenPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final holePath = Path()..addRRect(scanRect);
+    final overlayPath = Path.combine(PathOperation.difference, fullScreenPath, holePath);
+    canvas.drawPath(overlayPath, overlayPaint);
 
     // Calculate scan line position
     final topY = centerY - halfScanArea;
     final bottomY = centerY + halfScanArea;
     final scanLineY = topY + (bottomY - topY) * animation.value;
 
-    // Draw gradient scan line
+    // Draw gradient scan line (clipped to rounded rect for visual consistency)
+    canvas.save();
+    canvas.clipRRect(scanRect);
     final scanLineRect = Rect.fromLTWH(
       centerX - halfScanArea,
       scanLineY - 1,
       scanArea,
       2,
     );
-    
     final gradient = LinearGradient(
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,
@@ -940,74 +917,56 @@ class ScannerOverlayPainter extends CustomPainter {
         Colors.transparent,
       ],
     );
-
     final gradientPaint = Paint()
       ..shader = gradient.createShader(scanLineRect)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
-
     canvas.drawLine(
       Offset(centerX - halfScanArea, scanLineY),
       Offset(centerX + halfScanArea, scanLineY),
       gradientPaint,
     );
+    canvas.restore();
 
-    // Draw corner indicators
-    final cornerPaint = Paint()
+    // Draw blue border only at the four rounded corners (arcs)
+    final borderPaint = Paint()
       ..color = AppTheme.primaryColor
       ..strokeWidth = 4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    final cornerLength = 30.0;
-    final cornerRadius = 20.0;
+    final tl = scanRect.tlRadius;
+    final tr = scanRect.trRadius;
+    final br = scanRect.brRadius;
+    final bl = scanRect.blRadius;
 
-    // Top-left corner
-    canvas.drawLine(
-      Offset(centerX - halfScanArea, centerY - halfScanArea + cornerRadius),
-      Offset(centerX - halfScanArea, centerY - halfScanArea),
-      cornerPaint,
+    canvas.drawArc(
+      Rect.fromLTWH(scanRect.left, scanRect.top, tl.x * 2, tl.y * 2),
+      math.pi,
+      math.pi / 2,
+      false,
+      borderPaint,
     );
-    canvas.drawLine(
-      Offset(centerX - halfScanArea, centerY - halfScanArea),
-      Offset(centerX - halfScanArea + cornerRadius, centerY - halfScanArea),
-      cornerPaint,
+    canvas.drawArc(
+      Rect.fromLTWH(scanRect.right - tr.x * 2, scanRect.top, tr.x * 2, tr.y * 2),
+      math.pi * 1.5,
+      math.pi / 2,
+      false,
+      borderPaint,
     );
-
-    // Top-right corner
-    canvas.drawLine(
-      Offset(centerX + halfScanArea - cornerRadius, centerY - halfScanArea),
-      Offset(centerX + halfScanArea, centerY - halfScanArea),
-      cornerPaint,
+    canvas.drawArc(
+      Rect.fromLTWH(scanRect.right - br.x * 2, scanRect.bottom - br.y * 2, br.x * 2, br.y * 2),
+      0,
+      math.pi / 2,
+      false,
+      borderPaint,
     );
-    canvas.drawLine(
-      Offset(centerX + halfScanArea, centerY - halfScanArea),
-      Offset(centerX + halfScanArea, centerY - halfScanArea + cornerRadius),
-      cornerPaint,
-    );
-
-    // Bottom-left corner
-    canvas.drawLine(
-      Offset(centerX - halfScanArea, centerY + halfScanArea - cornerRadius),
-      Offset(centerX - halfScanArea, centerY + halfScanArea),
-      cornerPaint,
-    );
-    canvas.drawLine(
-      Offset(centerX - halfScanArea, centerY + halfScanArea),
-      Offset(centerX - halfScanArea + cornerRadius, centerY + halfScanArea),
-      cornerPaint,
-    );
-
-    // Bottom-right corner
-    canvas.drawLine(
-      Offset(centerX + halfScanArea - cornerRadius, centerY + halfScanArea),
-      Offset(centerX + halfScanArea, centerY + halfScanArea),
-      cornerPaint,
-    );
-    canvas.drawLine(
-      Offset(centerX + halfScanArea, centerY + halfScanArea - cornerRadius),
-      Offset(centerX + halfScanArea, centerY + halfScanArea),
-      cornerPaint,
+    canvas.drawArc(
+      Rect.fromLTWH(scanRect.left, scanRect.bottom - bl.y * 2, bl.x * 2, bl.y * 2),
+      math.pi / 2,
+      math.pi / 2,
+      false,
+      borderPaint,
     );
   }
 

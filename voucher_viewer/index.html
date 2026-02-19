@@ -13,9 +13,9 @@
       --bg-elevated: #1e293b;
       --surface: #1e293b;
       --surface-hover: #1a2332;
-      --primary: #3b82f6;
-      --primary-soft: rgba(59, 130, 246, 0.12);
-      --primary-glow: rgba(59, 130, 246, 0.25);
+      --primary: #14B8A6;
+      --primary-soft: rgba(20, 184, 166, 0.12);
+      --primary-glow: rgba(20, 184, 166, 0.25);
       --accent: #8b5cf6;
       --success: #10b981;
       --success-soft: rgba(16, 185, 129, 0.15);
@@ -30,7 +30,7 @@
       --radius: 16px;
       --radius-lg: 24px;
       --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-      --shadow-glow: 0 0 40px rgba(59, 130, 246, 0.08);
+      --shadow-glow: 0 0 40px rgba(20, 184, 166, 0.08);
     }
 
     * {
@@ -222,7 +222,7 @@
     .voucher-value-block {
       padding: 28px 24px 24px;
       text-align: center;
-      background: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, transparent 100%);
+      background: linear-gradient(180deg, rgba(20, 184, 166, 0.08) 0%, transparent 100%);
     }
     .voucher-value-label {
       font-size: 0.6875rem;
@@ -278,7 +278,7 @@
     }
     .voucher-code-box {
       background: var(--bg);
-      border: 2px solid rgba(59, 130, 246, 0.25);
+      border: 2px solid rgba(20, 184, 166, 0.25);
       border-radius: 12px;
       padding: 16px 20px;
       text-align: center;
@@ -701,7 +701,7 @@
 
       // Google Sheet backend: set this to your Apps Script Web app URL (Deploy > New deployment > Web app).
       // Leave empty to disable redeem and sheet sync (status from URL only).
-      const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzb6OrYZThOXG6h-kxHFS9UrJHoB74F6fR5fcYxkxSQdx6IvqWHPrIcbhT7fWfB0oiYkA/exec'; // e.g. 'https://script.google.com/macros/s/AKfycbz.../exec'
+      const SHEET_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzbyyoFevfZWVg5oanTZCGlRNKs2XsyuLxahINE7jVnqIkCN2T4dE7oUhre7ueaL47kZg/exec'; // e.g. 'https://script.google.com/macros/s/AKfycbz.../exec'
 
       function getJsonFromUrl() {
         const params = new URLSearchParams(window.location.search);
@@ -763,8 +763,9 @@
         const callbackName = 'sheetStatus_' + Date.now() + '_' + Math.random().toString(36).slice(2);
         window[callbackName] = function (data) {
           var status = data && data.status ? data.status.toLowerCase() : null;
-          console.log('[Google Sheet] Connection OK – status received:', status || '(none)');
-          finish(status);
+          var redeemedAt = data && data.redeemedAt ? data.redeemedAt : null;
+          console.log('[Google Sheet] Connection OK – status:', status || '(none)', redeemedAt ? ', redeemedAt: ' + redeemedAt : '');
+          finish({ status: status, redeemedAt: redeemedAt });
         };
         var timeoutId = setTimeout(function () {
           timeoutId = null;
@@ -941,7 +942,7 @@
               redeemInProgress = false;
               if (data && data.ok) {
                 currentVoucher.status = 'redeemed';
-                currentVoucher.redeemedAt = new Date().toISOString();
+                currentVoucher.redeemedAt = (data.redeemedAt && data.redeemedAt.trim()) ? data.redeemedAt.trim() : new Date().toISOString();
                 renderVoucher(currentVoucher);
               } else {
                 renderVoucher(currentVoucher);
@@ -986,11 +987,12 @@
           console.log('[Google Sheet] Loading voucher status from sheet for code:', voucher.voucherCode);
           redeemAreaLoading = true;
           renderVoucher(voucher);
-          sheetFetchStatus(voucher.voucherCode, function (sheetStatus) {
+          sheetFetchStatus(voucher.voucherCode, function (sheetData) {
             redeemAreaLoading = false;
-            if (sheetStatus) {
-              voucher.status = sheetStatus;
-              console.log('[Google Sheet] Using sheet status for display:', sheetStatus);
+            if (sheetData && sheetData.status) {
+              voucher.status = sheetData.status;
+              if (sheetData.redeemedAt) voucher.redeemedAt = sheetData.redeemedAt;
+              console.log('[Google Sheet] Using sheet status for display:', sheetData.status, sheetData.redeemedAt ? ', redeemedAt: ' + sheetData.redeemedAt : '');
             } else {
               console.log('[Google Sheet] Using URL status for display:', voucher.status || '(from URL)');
             }

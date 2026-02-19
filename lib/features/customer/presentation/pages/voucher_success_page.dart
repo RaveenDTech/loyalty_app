@@ -13,6 +13,7 @@ import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/models/voucher.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/voucher_image_generator.dart';
+import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/toast.dart';
 
 class VoucherSuccessPage extends StatefulWidget {
@@ -222,9 +223,8 @@ class _VoucherSuccessPageState extends State<VoucherSuccessPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+      extendBodyBehindAppBar: true ,
+      appBar: GlassAppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => context.go('/customer/home'),
@@ -237,7 +237,6 @@ class _VoucherSuccessPageState extends State<VoucherSuccessPage> {
             color: AppTheme.textPrimary,
           ),
         ),
-        centerTitle: true,
       ),
       body: Consumer2<VoucherProvider, AuthProvider>(
         builder: (context, voucherProvider, authProvider, _) {
@@ -256,255 +255,259 @@ class _VoucherSuccessPageState extends State<VoucherSuccessPage> {
 
           // If still null, show loading and redirect after delay (happy path)
           if (voucher == null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(
-                    color: AppTheme.primaryColor,
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Loading voucher...',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+            return SafeArea(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(
+                      color: AppTheme.primaryColor,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Please wait',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
+                    const SizedBox(height: 24),
+                    Text(
+                      'Loading voucher...',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please wait',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                // Success Icon
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: AppTheme.successColor.withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_circle_rounded,
-                    size: 60,
-                    color: AppTheme.successColor,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Voucher Purchased!',
-                  style: GoogleFonts.poppins(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Your gift voucher is ready to share',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Voucher Image Preview
-                Screenshot(
-                  controller: _screenshotController,
-                  child: VoucherImageGenerator.generateVoucherImage(voucher),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Share Options
-                Text(
-                  'Share Voucher',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Share Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ShareButton(
-                        icon: Brand(
-                          Brands.whatsapp,
-                          size: 28,
-                        ),
-                        label: 'WhatsApp',
-                        color: const Color(0xFF25D366),
-                        onTap: _isSharing ? null : () => _shareViaWhatsApp(voucher!),
-                      ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // Success Icon
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: AppTheme.successColor.withOpacity(0.15),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ShareButton(
-                        icon: Brand(
-                          Brands.gmail,
-                          size: 28,
-                        ),
-                        label: 'Email',
-                        color: AppTheme.primaryColor,
-                        onTap: _isSharing ? null : () => _shareViaEmail(voucher!),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ShareButton(
-                        icon: const Icon(
-                          Icons.image_rounded,
-                          size: 28,
-                        ),
-                        label: 'Share Image',
-                        color: AppTheme.accentColor,
-                        onTap: _isSharing ? null : () => _shareAsImage(voucher!),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ShareButton(
-                        icon: const Icon(
-                          Icons.text_fields_rounded,
-                          size: 28,
-                        ),
-                        label: 'Share Text',
-                        color: AppTheme.infoColor,
-                        onTap: _isSharing ? null : () => _shareAsText(voucher!),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Share with app users (multi-user status & single redemption)
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _isSharing
-                        ? null
-                        : () => _showShareWithAppUsersSheet(context, voucher!, authProvider, voucherProvider),
-                    icon: const Icon(Icons.people_rounded, size: 22),
-                    label: Text(
-                      'Share with app users',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: AppTheme.accentColor),
-                      foregroundColor: AppTheme.accentColor,
+                    child: const Icon(
+                      Icons.check_circle_rounded,
+                      size: 60,
+                      color: AppTheme.successColor,
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                // View voucher online – copy short link
-                Text(
-                  'View voucher online',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _copyVoucherViewerLink(voucher!),
-                    icon: const Icon(Icons.link_rounded, size: 20),
-                    label: Text(
-                      'Copy short link',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      side: const BorderSide(color: AppTheme.primaryColor),
-                      foregroundColor: AppTheme.primaryColor,
+                  const SizedBox(height: 24),
+                  Text(
+                    'Voucher Purchased!',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Action Buttons
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => context.push('/customer/voucher-history'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: AppTheme.surfaceColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: const BorderSide(
-                          color: AppTheme.borderColor,
-                          width: 1.5,
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your gift voucher is ready to share',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+              
+                  // Voucher Image Preview
+                  Screenshot(
+                    controller: _screenshotController,
+                    child: VoucherImageGenerator.generateVoucherImage(voucher),
+                  ),
+              
+                  const SizedBox(height: 32),
+              
+                  // Share Options
+                  Text(
+                    'Share Voucher',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+              
+                  // Share Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ShareButton(
+                          icon: Brand(
+                            Brands.whatsapp,
+                            size: 28,
+                          ),
+                          label: 'WhatsApp',
+                          color: const Color(0xFF25D366),
+                          onTap: _isSharing ? null : () => _shareViaWhatsApp(voucher!),
                         ),
                       ),
-                    ),
-                    child: Text(
-                      'View Voucher History',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ShareButton(
+                          icon: Brand(
+                            Brands.gmail,
+                            size: 28,
+                          ),
+                          label: 'Email',
+                          color: AppTheme.primaryColor,
+                          onTap: _isSharing ? null : () => _shareViaEmail(voucher!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ShareButton(
+                          icon: const Icon(
+                            Icons.image_rounded,
+                            size: 28,
+                          ),
+                          label: 'Share Image',
+                          color: AppTheme.accentColor,
+                          onTap: _isSharing ? null : () => _shareAsImage(voucher!),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ShareButton(
+                          icon: const Icon(
+                            Icons.text_fields_rounded,
+                            size: 28,
+                          ),
+                          label: 'Share Text',
+                          color: AppTheme.infoColor,
+                          onTap: _isSharing ? null : () => _shareAsText(voucher!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Share with app users (multi-user status & single redemption)
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isSharing
+                          ? null
+                          : () => _showShareWithAppUsersSheet(context, voucher!, authProvider, voucherProvider),
+                      icon: const Icon(Icons.people_rounded, size: 22),
+                      label: Text(
+                        'Share with app users',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: AppTheme.accentColor),
+                        foregroundColor: AppTheme.accentColor,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                SafeArea(
-                  child: SizedBox(
+                  const SizedBox(height: 16),
+                  // View voucher online – copy short link
+                  Text(
+                    'View voucher online',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _copyVoucherViewerLink(voucher!),
+                      icon: const Icon(Icons.link_rounded, size: 20),
+                      label: Text(
+                        'Copy short link',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: const BorderSide(color: AppTheme.primaryColor),
+                        foregroundColor: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ),
+              
+                  const SizedBox(height: 32),
+              
+                  // Action Buttons
+                  SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () => context.go('/customer/home'),
+                      onPressed: () => context.push('/customer/voucher-history'),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: AppTheme.primaryColor,
+                        backgroundColor: AppTheme.surfaceColor,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
+                          side: const BorderSide(
+                            color: AppTheme.borderColor,
+                            width: 1.5,
+                          ),
                         ),
                       ),
                       child: Text(
-                        'Back to Home',
+                        'View Voucher History',
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
-              ],
+                  const SizedBox(height: 12),
+                  SafeArea(
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => context.go('/customer/home'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          backgroundColor: AppTheme.primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'Back to Home',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
             ),
           );
         },

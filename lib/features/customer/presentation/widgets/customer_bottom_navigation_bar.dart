@@ -15,107 +15,109 @@ class CustomerBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.bottomCenter,
-      children: [
-        // Navigation bar container
-        Container(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 30),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(35),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(35),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-              child: Container(
-                height: 72,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppTheme.surfaceColor.withOpacity(0.5),
-                      AppTheme.surfaceColor.withOpacity(0.0),
+    return SafeArea(
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.bottomCenter,
+        children: [
+          // Navigation bar container
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(35),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(35),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                child: Container(
+                  height: 72,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppTheme.surfaceColor.withOpacity(0.5),
+                        AppTheme.surfaceColor.withOpacity(0.0),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.1),
+                      width: 1.5,
+                    ),
+                    borderRadius: BorderRadius.circular(35),
+                  ),
+                  child: Stack(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: CustomerNavBarItem(
+                                icon: Icons.dashboard_rounded,
+                                label: 'Home',
+                                isSelected: currentIndex == 0,
+                                onTap: () => onTap(0),
+                              ),
+                            ),
+                            Expanded(
+                              child: CustomerNavBarItem(
+                                icon: Icons.request_quote_rounded,
+                                label: 'Requests',
+                                isSelected: currentIndex == 1,
+                                onTap: () => onTap(1),
+                              ),
+                            ),
+                            // Spacer for center button
+                            const SizedBox(width: 45),
+                              Expanded(
+                                child: CustomerNavBarItem(
+                                  icon: Icons.receipt_long_rounded,
+                                  label: 'Transactions',
+                                  isSelected: currentIndex == 2,
+                                  onTap: () => onTap(2),
+                                ),
+                              ),
+                              Expanded(
+                                child: CustomerNavBarItem(
+                                  icon: Icons.person_rounded,
+                                  label: 'Profile',
+                                  isSelected: currentIndex == 3,
+                                  onTap: () => onTap(3),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.1),
-                    width: 1.5,
-                  ),
-                  borderRadius: BorderRadius.circular(35),
-                ),
-                child: Stack(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: CustomerNavBarItem(
-                              icon: Icons.dashboard_rounded,
-                              label: 'Home',
-                              isSelected: currentIndex == 0,
-                              onTap: () => onTap(0),
-                            ),
-                          ),
-                          Expanded(
-                            child: CustomerNavBarItem(
-                              icon: Icons.request_quote_rounded,
-                              label: 'Requests',
-                              isSelected: currentIndex == 1,
-                              onTap: () => onTap(1),
-                            ),
-                          ),
-                          // Spacer for center button
-                          const SizedBox(width: 45),
-                            Expanded(
-                              child: CustomerNavBarItem(
-                                icon: Icons.receipt_long_rounded,
-                                label: 'Transactions',
-                                isSelected: currentIndex == 2,
-                                onTap: () => onTap(2),
-                              ),
-                            ),
-                            Expanded(
-                              child: CustomerNavBarItem(
-                                icon: Icons.person_rounded,
-                                label: 'Profile',
-                                isSelected: currentIndex == 3,
-                                onTap: () => onTap(3),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),
           ),
-        ),
-        // Floating QR Code Button - positioned outside the bar
-        Positioned(
-          bottom: 65,
-          child: CustomerCenterQRButton(
-            onTap: () {
-              // Navigate to separate QR scan page
-              context.push('/customer/scan');
-            },
+          // Floating QR Code Button - positioned outside the bar
+          Positioned(
+            bottom: 55,
+            child: CustomerCenterQRButton(
+              onTap: () {
+                // Navigate to separate QR scan page
+                context.push('/customer/scan');
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

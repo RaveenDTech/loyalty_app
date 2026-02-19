@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/vendor.dart';
 import '../models/voucher.dart';
 import '../models/shared_voucher.dart';
+import '../utils/voucher_image_generator.dart';
 
 class VoucherProvider extends ChangeNotifier {
   List<Vendor> _vendors = [];
@@ -350,7 +351,8 @@ class VoucherProvider extends ChangeNotifier {
 
   /// Redeem a voucher (e.g. by a recipient). Marks voucher as redeemed immediately;
   /// all other users with the same shared coupon will see it as Expired.
-  void redeemVoucher(String voucherId, String redeemedByUserId) {
+  /// [redeemedAt] optional date from sheet; if null uses DateTime.now().
+  void redeemVoucher(String voucherId, String redeemedByUserId, [DateTime? redeemedAt]) {
     final index = _vouchers.indexWhere((v) => v.id == voucherId);
     if (index < 0) return;
     final v = _vouchers[index];
@@ -366,7 +368,7 @@ class VoucherProvider extends ChangeNotifier {
       voucherCode: v.voucherCode,
       status: VoucherStatus.redeemed,
       purchasedAt: v.purchasedAt,
-      redeemedAt: DateTime.now(),
+      redeemedAt: redeemedAt ?? DateTime.now(),
       expiresAt: v.expiresAt,
       recipientName: v.recipientName,
       recipientEmail: v.recipientEmail,
@@ -381,5 +383,112 @@ class VoucherProvider extends ChangeNotifier {
     if (voucher == null || !voucher.isActive) return false;
     return _sharedVouchers.any((s) =>
         s.voucherId == voucherId && s.recipientUserId == currentUserId);
+  }
+
+  /// Refresh a single voucher's status from the Google Sheet backend and update local state.
+  Future<void> refreshVoucherStatusFromSheetById(String voucherId) async {
+    debugPrint('[VoucherSheet] Refresh by id: $voucherId');
+    final voucher = getVoucherById(voucherId);
+    if (voucher == null) {
+      debugPrint('[VoucherSheet] Voucher not found for id: $voucherId');
+      return;
+    }
+    final data = await VoucherImageGenerator.fetchStatusFromSheet(voucher.voucherCode);
+    if (data == null) {
+      debugPrint('[VoucherSheet] No status from sheet for code: ${voucher.voucherCode} – keeping current');
+      return;
+    }
+    _applySheetStatusToVoucher(
+      voucher.voucherCode,
+      data[VoucherImageGenerator.kStatusKey] as String? ?? 'active',
+      data[VoucherImageGenerator.kRedeemedAtKey] as String?,
+    );
+  }
+
+  /// Refresh status from sheet for a voucher code (finds first matching voucher by code).
+  Future<void> refreshVoucherStatusFromSheetByCode(String voucherCode) async {
+    debugPrint('[VoucherSheet] Refresh by code: $voucherCode');
+    final data = await VoucherImageGenerator.fetchStatusFromSheet(voucherCode);
+    if (data == null) {
+      debugPrint('[VoucherSheet] No status from sheet for code: $voucherCode – keeping current');
+      return;
+    }
+    _applySheetStatusToVoucher(
+      voucherCode,
+      data[VoucherImageGenerator.kStatusKey] as String? ?? 'active',
+      data[VoucherImageGenerator.kRedeemedAtKey] as String?,
+    );
+  }
+
+  /// Refresh status from sheet for all vouchers in the list (e.g. for pull-to-refresh).
+  Future<void> refreshAllVouchersStatusFromSheet(List<Voucher> vouchers) async {
+    debugPrint('[VoucherSheet] Refresh all – ${vouchers.length} voucher(s)');
+    for (final v in vouchers) {
+      final data = await VoucherImageGenerator.fetchStatusFromSheet(v.voucherCode);
+      if (data != null) {
+        _applySheetStatusToVoucher(
+          v.voucherCode,
+          data[VoucherImageGenerator.kStatusKey] as String? ?? 'active',
+          data[VoucherImageGenerator.kRedeemedAtKey] as String?,
+        );
+      }
+    }
+    debugPrint('[VoucherSheet] Refresh all complete');
+  }
+
+  void _applySheetStatusToVoucher(String voucherCode, String statusStr, [String? redeemedAtIso]) {
+    final index = _vouchers.indexWhere((v) => v.voucherCode == voucherCode);
+    if (index < 0) return;
+    final v = _vouchers[index];
+    final status = _sheetStatusToEnum(statusStr);
+    DateTime? newRedeemedAt;
+    if (status == VoucherStatus.redeemed) {
+      if (redeemedAtIso != null && redeemedAtIso.isNotEmpty) {
+        try {
+          newRedeemedAt = DateTime.parse(redeemedAtIso);
+        } catch (_) {
+          newRedeemedAt = v.redeemedAt ?? DateTime.now();
+        }
+      } else {
+        newRedeemedAt = v.redeemedAt ?? DateTime.now();
+      }
+    } else {
+      newRedeemedAt = v.redeemedAt;
+    }
+    if (status == v.status && newRedeemedAt == v.redeemedAt) {
+      debugPrint('[VoucherSheet] Status unchanged for $voucherCode: $statusStr');
+      return;
+    }
+    debugPrint('[VoucherSheet] Updating voucher $voucherCode: ${v.status} -> $status');
+    _vouchers[index] = Voucher(
+      id: v.id,
+      customerId: v.customerId,
+      customerName: v.customerName,
+      vendorId: v.vendorId,
+      vendorName: v.vendorName,
+      amount: v.amount,
+      voucherCode: v.voucherCode,
+      status: status,
+      purchasedAt: v.purchasedAt,
+      redeemedAt: newRedeemedAt,
+      expiresAt: v.expiresAt,
+      recipientName: v.recipientName,
+      recipientEmail: v.recipientEmail,
+      recipientPhone: v.recipientPhone,
+    );
+    notifyListeners();
+  }
+
+  VoucherStatus _sheetStatusToEnum(String s) {
+    switch (s) {
+      case 'redeemed':
+        return VoucherStatus.redeemed;
+      case 'expired':
+        return VoucherStatus.expired;
+      case 'cancelled':
+        return VoucherStatus.cancelled;
+      default:
+        return VoucherStatus.active;
+    }
   }
 }

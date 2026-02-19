@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/providers/loyalty_provider.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../supplier/presentation/widgets/empty_state_card.dart';
 
 class CustomerRequestsPage extends StatelessWidget {
@@ -18,10 +19,8 @@ class CustomerRequestsPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: _bgTop,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+      extendBodyBehindAppBar: true ,
+      appBar: GlassAppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.of(context).pop(),
@@ -32,7 +31,6 @@ class CustomerRequestsPage extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        centerTitle: true,
       ),
       body: Consumer2<LoyaltyProvider, AuthProvider>(
         builder: (context, loyaltyProvider, authProvider, _) {
@@ -48,18 +46,20 @@ class CustomerRequestsPage extends StatelessWidget {
           ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
           if (allRequests.isEmpty) {
-            return Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppTheme.backgroundColor,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(25),
+            return SafeArea(
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: AppTheme.backgroundColor,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(25),
+                  ),
                 ),
-              ),
-              child: const EmptyStateCard(
-                icon: Icons.request_quote_outlined,
-                title: 'No requests yet',
-                subtitle: 'Scan a QR code to request a discount from suppliers',
+                child: const EmptyStateCard(
+                  icon: Icons.request_quote_outlined,
+                  title: 'No requests yet',
+                  subtitle: 'Scan a QR code to request a discount from suppliers',
+                ),
               ),
             );
           }

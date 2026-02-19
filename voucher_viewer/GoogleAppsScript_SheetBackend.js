@@ -15,13 +15,15 @@
  * SHEET LAYOUT:
  * - Column A: Voucher code
  * - Column B: Status (e.g. active, redeemed, expired)
+ * - Column C: Redeemed date (ISO 8601 when status is redeemed)
  * - Row 1 can be headers (script skips row 0 when matching by code; adjust if you use headers).
  */
 
 const SHEET_ID = '1xAth9uoefcjKcKZbg9M2QaoFFhCyAtkYkAd6Z1u85DI';
-const COL_CODE = 1;   // A = Voucher code
-const COL_STATUS = 2; // B = Status
-const DATA_START_ROW = 2; // 2 = row 1 is header (Voucher code, Status); use 1 if no header
+const COL_CODE = 1;     // A = Voucher code
+const COL_STATUS = 2;   // B = Status
+const COL_REDEEMED = 3; // C = Redeemed date (ISO)
+const DATA_START_ROW = 2; // 2 = row 1 is header; use 1 if no header
 
 function doGet(e) {
   const params = e && e.parameter ? e.parameter : {};
@@ -40,24 +42,26 @@ function doGet(e) {
     const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
     const sheet = spreadsheet.getSheets()[0];
     const lastRow = Math.max(sheet.getLastRow(), 1);
-    const range = sheet.getRange(DATA_START_ROW, COL_CODE, lastRow, COL_STATUS);
+    const range = sheet.getRange(DATA_START_ROW, COL_CODE, lastRow, COL_REDEEMED);
     const values = range.getValues();
 
     if (action === 'status') {
-      const status = getStatusForCode(values, code);
-      result = { status: status };
+      const info = getStatusAndRedeemedAt(values, code);
+      result = { status: info.status, redeemedAt: info.redeemedAt || null };
     } else if (action === 'redeem') {
+      const redeemedAtIso = new Date().toISOString();
       const rowIndex = findRowIndex(values, code);
       if (rowIndex === -1) {
-        // Code not in sheet: append new row so status is stored for future loads
         const nextRow = lastRow + 1;
         sheet.getRange(nextRow, COL_CODE).setValue(code);
         sheet.getRange(nextRow, COL_STATUS).setValue('redeemed');
-        result = { ok: true, status: 'redeemed' };
+        sheet.getRange(nextRow, COL_REDEEMED).setValue(redeemedAtIso);
+        result = { ok: true, status: 'redeemed', redeemedAt: redeemedAtIso };
       } else {
         const sheetRow = DATA_START_ROW + rowIndex;
         sheet.getRange(sheetRow, COL_STATUS).setValue('redeemed');
-        result = { ok: true, status: 'redeemed' };
+        sheet.getRange(sheetRow, COL_REDEEMED).setValue(redeemedAtIso);
+        result = { ok: true, status: 'redeemed', redeemedAt: redeemedAtIso };
       }
     } else {
       result = { error: 'Unknown action. Use action=status or action=redeem' };
@@ -66,14 +70,22 @@ function doGet(e) {
     result = { error: String(err.message || err) };
   }
 
+  // If no callback param, return plain JSON (for mobile app / HTTP GET)
+  if (params.callback == null || params.callback === '') {
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
   return jsonp(callback, result);
 }
 
-function getStatusForCode(values, code) {
+function getStatusAndRedeemedAt(values, code) {
   const row = findRowIndex(values, code);
-  if (row === -1) return 'active';
-  const cell = (values[row][COL_STATUS - 1] || '').toString().trim().toLowerCase();
-  return cell || 'active';
+  if (row === -1) return { status: 'active', redeemedAt: null };
+  const statusCell = (values[row][COL_STATUS - 1] || '').toString().trim().toLowerCase();
+  const status = statusCell || 'active';
+  const redeemedCell = (values[row][COL_REDEEMED - 1] || '').toString().trim();
+  const redeemedAt = redeemedCell || null;
+  return { status: status, redeemedAt: redeemedAt };
 }
 
 function findRowIndex(values, code) {

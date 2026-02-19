@@ -3,10 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme { 
   // Modern Premium Colors - Loyalty App
-  // Primary: Modern Blue - Professional & Trustworthy
-  static const Color primaryColor = Color(0xFF337AFF); // Indigo
-  static const Color primaryDark = Color(0xFF113E8F); // Deep Indigo
-  static const Color primaryLight = Color(0xFFE0E7FF); // Light Indigo
+  // Primary: Teal - Fresh, distinct, works great on dark
+  static const Color primaryColor = Color(0xFF14B8A6); // Teal
+  static const Color primaryDark = Color(0xFF08504A);  // Darker teal
+  static const Color primaryLight = Color(0xFFD9FBF4); // Light teal
   
   // Secondary: Modern Purple - Premium & Rewards
   static const Color accentColor = Color(0xFF8B5CF6); // Purple
@@ -19,12 +19,12 @@ class AppTheme {
   static const Color infoColor = Color(0xFF06B6D4); // Modern Cyan
 
   // Neutral Colors - Dark Mode Only
-  static const Color backgroundColor = Color(0xFF050816); // Deep navy background
-  static const Color surfaceColor = Color(0xFF0B1020); // Card / surface
+  static const Color backgroundColor = Color(0xFF031514); // Deep navy background
+  static const Color surfaceColor = Color(0xFF081917); // Card / surface
   static const Color textPrimary = Color(0xFFF9FAFB); // Near-white
   static const Color textSecondary = Color(0xFF9CA3AF); // Cool grey
-  static const Color borderColor = Color(0xFF1F2937); // Dark border
-  static const Color dividerColor = Color(0xFF111827); // Subtle divider
+  static const Color borderColor = Color(0xFF1F3734); // Dark border
+  static const Color dividerColor = Color(0xFF112727); // Subtle divider
   
   // Legacy support (for backward compatibility)
   static const Color secondaryColor = accentColor; // Modern Purple

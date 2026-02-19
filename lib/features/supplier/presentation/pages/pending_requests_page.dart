@@ -7,6 +7,7 @@ import '../../../../core/providers/loyalty_provider.dart';
 import '../../../../core/providers/notification_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/confirmation_dialog.dart';
+import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/toast.dart';
 import '../widgets/empty_state_card.dart';
 import 'bill_upload_page.dart';
@@ -21,10 +22,8 @@ class PendingRequestsPage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: _bgTop,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+      extendBodyBehindAppBar: true ,
+      appBar: GlassAppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.of(context).pop(),
@@ -35,7 +34,6 @@ class PendingRequestsPage extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        centerTitle: true,
       ),
       body: Consumer<LoyaltyProvider>(
         builder: (context, loyaltyProvider, _) {
@@ -66,16 +64,18 @@ class PendingRequestsPage extends StatelessWidget {
                 top: Radius.circular(25),
               ),
             ),
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-              itemCount: requests.length,
-              itemBuilder: (context, index) {
-                final request = requests[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _RequestCard(request: request),
-                );
-              },
+            child: SafeArea(
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final request = requests[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: _RequestCard(request: request),
+                  );
+                },
+              ),
             ),
           );
         },
@@ -130,329 +130,331 @@ class _RequestCardState extends State<_RequestCard> {
           width: 1,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top section - always visible (collapsed state)
-          InkWell(
-            onTap: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-            },
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.primaryColor.withOpacity(0.08),
-                    AppTheme.primaryColor.withOpacity(0.03),
-                  ],
-                ),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(_isExpanded ? 0 : 16),
-                  bottomRight: Radius.circular(_isExpanded ? 0 : 16),
-                ),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top section - always visible (collapsed state)
+            InkWell(
+              onTap: () {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              },
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
               ),
-              child: Row(
-                children: [
-                  // Avatar
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppTheme.primaryColor,
-                          AppTheme.primaryColor.withOpacity(0.7),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.primaryColor.withOpacity(0.08),
+                      AppTheme.primaryColor.withOpacity(0.03),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(16),
+                    topRight: const Radius.circular(16),
+                    bottomLeft: Radius.circular(_isExpanded ? 0 : 16),
+                    bottomRight: Radius.circular(_isExpanded ? 0 : 16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Avatar
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppTheme.primaryColor,
+                            AppTheme.primaryColor.withOpacity(0.7),
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
                         ],
                       ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryColor.withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        initials,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Customer Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          customerName,
-                          style: theme.textTheme.titleMedium?.copyWith(
+                      child: Center(
+                        child: Text(
+                          initials,
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.person_outline_rounded,
-                              size: 12,
-                              color: AppTheme.textSecondary,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                'ID: ${widget.request.customerId.substring(0, 10)}...',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: AppTheme.textSecondary,
-                                  fontSize: 11,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                  // Status Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.warningColor.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 5,
-                          height: 5,
-                          decoration: const BoxDecoration(
-                            color: AppTheme.warningColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        const Text(
-                          'Pending',
-                          style: TextStyle(
-                            color: AppTheme.warningColor,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Expand/Collapse Icon
-                  AnimatedRotation(
-                    turns: _isExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: AppTheme.textSecondary,
-                      size: 20,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Expandable Content Section with slide transition
-          ClipRect(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, -0.3),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  )),
-                  child: FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  ),
-                );
-              },
-              child: _isExpanded
-                  ? Padding(
-                      key: const ValueKey('expanded'),
-                      padding: const EdgeInsets.all(16),
+                    const SizedBox(width: 12),
+                    // Customer Info
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Request info row
+                          Text(
+                            customerName,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
                           Row(
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.discount_rounded,
-                                  size: 18,
-                                  color: AppTheme.primaryColor,
-                                ),
+                              const Icon(
+                                Icons.person_outline_rounded,
+                                size: 12,
+                                color: AppTheme.textSecondary,
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 4),
                               Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Discount Request',
-                                      style: theme.textTheme.bodySmall?.copyWith(
-                                        color: AppTheme.textSecondary,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Customer requesting discount',
-                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  'ID: ${widget.request.customerId.substring(0, 10)}...',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: AppTheme.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          // Date and time info
+                        ],
+                      ),
+                    ),
+                    // Status Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.warningColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppTheme.backgroundColor.withOpacity(0.5),
-                              borderRadius: BorderRadius.circular(10),
+                            width: 5,
+                            height: 5,
+                            decoration: const BoxDecoration(
+                              color: AppTheme.warningColor,
+                              shape: BoxShape.circle,
                             ),
-                            child: Row(
+                          ),
+                          const SizedBox(width: 5),
+                          const Text(
+                            'Pending',
+                            style: TextStyle(
+                              color: AppTheme.warningColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Expand/Collapse Icon
+                    AnimatedRotation(
+                      turns: _isExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: AppTheme.textSecondary,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            // Expandable Content Section with slide transition
+            ClipRect(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (Widget child, Animation<double> animation) {
+                  return SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, -0.3),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    )),
+                    child: FadeTransition(
+                      opacity: animation,
+                      child: child,
+                    ),
+                  );
+                },
+                child: _isExpanded
+                    ? Padding(
+                        key: const ValueKey('expanded'),
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Request info row
+                            Row(
                               children: [
-                                const Icon(
-                                  Icons.calendar_today_rounded,
-                                  size: 14,
-                                  color: AppTheme.textSecondary,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  dateFormat.format(widget.request.createdAt),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                const Icon(
-                                  Icons.access_time_rounded,
-                                  size: 14,
-                                  color: AppTheme.textSecondary,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  timeFormat.format(widget.request.createdAt),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                const Spacer(),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
+                                  padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: AppTheme.primaryColor.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Text(
-                                    _getTimeAgo(widget.request.createdAt),
-                                    style: const TextStyle(
-                                      color: AppTheme.primaryColor,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                  child: const Icon(
+                                    Icons.discount_rounded,
+                                    size: 18,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Discount Request',
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          color: AppTheme.textSecondary,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Customer requesting discount',
+                                        style: theme.textTheme.bodyMedium?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                          
-                          const SizedBox(height: 16),
-                          
-                          // Action Buttons
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _ActionButton(
-                                  icon: Icons.close_rounded,
-                                  label: 'Reject',
-                                  color: AppTheme.errorColor,
-                                  isOutlined: true,
-                                  isLoading: _isLoading && _actionType == 'reject',
-                                  onTap: _isLoading
-                                      ? null
-                                      : () => _rejectRequest(context, widget.request.id),
-                                ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // Date and time info
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppTheme.backgroundColor.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(10),
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                flex: 2,
-                                child: _ActionButton(
-                                  icon: Icons.check_circle_rounded,
-                                  label: 'Approve Request',
-                                  color: AppTheme.successColor,
-                                  isOutlined: false,
-                                  isLoading: _isLoading && _actionType == 'approve',
-                                  onTap: _isLoading
-                                      ? null
-                                      : () => _approveRequest(context, widget.request),
-                                ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.calendar_today_rounded,
+                                    size: 14,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    dateFormat.format(widget.request.createdAt),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  const Icon(
+                                    Icons.access_time_rounded,
+                                    size: 14,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    timeFormat.format(widget.request.createdAt),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      _getTimeAgo(widget.request.createdAt),
+                                      style: const TextStyle(
+                                        color: AppTheme.primaryColor,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    )
-                  : const SizedBox.shrink(key: ValueKey('collapsed')),
+                            ),
+                            
+                            const SizedBox(height: 16),
+                            
+                            // Action Buttons
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _ActionButton(
+                                    icon: Icons.close_rounded,
+                                    label: 'Reject',
+                                    color: AppTheme.errorColor,
+                                    isOutlined: true,
+                                    isLoading: _isLoading && _actionType == 'reject',
+                                    onTap: _isLoading
+                                        ? null
+                                        : () => _rejectRequest(context, widget.request.id),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  flex: 2,
+                                  child: _ActionButton(
+                                    icon: Icons.check_circle_rounded,
+                                    label: 'Approve Request',
+                                    color: AppTheme.successColor,
+                                    isOutlined: false,
+                                    isLoading: _isLoading && _actionType == 'approve',
+                                    onTap: _isLoading
+                                        ? null
+                                        : () => _approveRequest(context, widget.request),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      )
+                    : const SizedBox.shrink(key: ValueKey('collapsed')),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

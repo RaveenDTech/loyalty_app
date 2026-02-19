@@ -1,14 +1,18 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/loyalty_provider.dart';
 import '../../../../core/providers/notification_provider.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/confirmation_dialog.dart';
+import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/toast.dart';
 import '../widgets/supplier_info_card.dart';
 import '../widgets/supplier_quick_action_button.dart';
@@ -28,10 +32,38 @@ class SupplierHomePage extends StatefulWidget {
   State<SupplierHomePage> createState() => _SupplierHomePageState();
 }
 
-class _SupplierHomePageState extends State<SupplierHomePage> {
+class _SupplierHomePageState extends State<SupplierHomePage>
+    with TickerProviderStateMixin {
   static const Color _bgTop = Color(0xFF080E27);
   static const Color _bgTop2 = Color(0xFF0F2B66);
   int _currentIndex = 0;
+
+  late AnimationController _waveController;
+  late AnimationController _particleController;
+  late Animation<double> _waveAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _waveController = AnimationController(
+      duration: const Duration(milliseconds: 3000),
+      vsync: this,
+    )..repeat();
+    _particleController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    )..repeat();
+    _waveAnimation = Tween<double>(begin: 0.0, end: 2 * math.pi).animate(
+      CurvedAnimation(parent: _waveController, curve: Curves.linear),
+    );
+  }
+
+  @override
+  void dispose() {
+    _waveController.dispose();
+    _particleController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,53 +168,111 @@ class _SupplierHomePageState extends State<SupplierHomePage> {
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
+                        // Same gradient as splash & login
                         Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [
-                                AppTheme.primaryColor,
-                                _bgTop2,
+                                AppTheme.backgroundColor,
+                                AppTheme.primaryDark,
+                                AppTheme.primaryColor.withOpacity(0.2),
                               ],
+                              stops: const [0.0, 0.6, 1.0],
                             ),
                           ),
+                        ),
+                        // Animated waves
+                        AnimatedBuilder(
+                          animation: _waveController,
+                          builder: (context, child) {
+                            return Positioned.fill(
+                              child: CustomPaint(
+                                painter: _SupplierWavePainter(
+                                  waveValue: _waveAnimation.value,
+                                  primaryColor: AppTheme.primaryColor,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        // Floating particles
+                        AnimatedBuilder(
+                          animation: _particleController,
+                          builder: (context, child) {
+                            return _SupplierFloatingParticles(
+                              animationValue: _particleController.value,
+                            );
+                          },
+                        ),
+                        // Header content
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               SafeArea(
-                                // bottom: false,
                                 right: false,
                                 left: false,
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    CircleAvatar(
-                                      radius: 24,
-                                      backgroundColor:
-                                          Colors.white.withOpacity(0.2),
-                                      child: Text(
-                                        initials,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.3),
+                                          width: 1.5,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: AppTheme.primaryColor.withOpacity(0.3),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              colors: [
+                                                AppTheme.primaryColor,
+                                                AppTheme.primaryColor.withOpacity(0.7),
+                                              ],
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              initials,
+                                              style: GoogleFonts.poppins(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             'Welcome back',
-                                            style: theme.textTheme.bodyMedium
-                                                ?.copyWith(
-                                              color:
-                                                  Colors.white.withOpacity(0.9),
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                              color: Colors.white.withOpacity(0.9),
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                           const SizedBox(height: 2),
@@ -190,42 +280,41 @@ class _SupplierHomePageState extends State<SupplierHomePage> {
                                             supplierName,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: theme.textTheme.titleLarge
-                                                ?.copyWith(
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 18,
                                               color: Colors.white,
-                                              fontWeight: FontWeight.bold,
+                                              fontWeight: FontWeight.w700,
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    const SizedBox(width: 12),
                                     Consumer<NotificationProvider>(
-                                      builder:
-                                          (context, notificationProvider, _) {
-                                        final unreadCount =
-                                            notificationProvider.unreadCount;
+                                      builder: (context, notificationProvider, _) {
+                                        final unreadCount = notificationProvider.unreadCount;
                                         return Stack(
                                           clipBehavior: Clip.none,
                                           children: [
-                                            InkWell(
-                                              onTap: () {
-                                                context.push('/notifications');
-                                              },
-                                              borderRadius:
-                                                  BorderRadius.circular(24),
-                                              child: Container(
-                                                width: 40,
-                                                height: 40,
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white
-                                                      .withOpacity(0.1),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(
-                                                  Icons
-                                                      .notifications_none_rounded,
-                                                  color: Colors.white,
+                                            Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                onTap: () => context.push('/notifications'),
+                                                borderRadius: BorderRadius.circular(24),
+                                                child: Container(
+                                                  width: 44,
+                                                  height: 44,
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white.withOpacity(0.12),
+                                                    border: Border.all(
+                                                      color: Colors.white.withOpacity(0.2),
+                                                    ),
+                                                    borderRadius: BorderRadius.circular(22),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.notifications_none_rounded,
+                                                    color: Colors.white,
+                                                    size: 22,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -234,27 +323,22 @@ class _SupplierHomePageState extends State<SupplierHomePage> {
                                                 right: -2,
                                                 top: -2,
                                                 child: Container(
-                                                  padding:
-                                                      const EdgeInsets.all(4),
+                                                  padding: const EdgeInsets.all(4),
                                                   decoration: BoxDecoration(
                                                     color: Colors.red.shade400,
                                                     shape: BoxShape.circle,
                                                   ),
-                                                  constraints:
-                                                      const BoxConstraints(
+                                                  constraints: const BoxConstraints(
                                                     minWidth: 18,
                                                     minHeight: 18,
                                                   ),
                                                   child: Center(
                                                     child: Text(
-                                                      unreadCount > 9
-                                                          ? '9+'
-                                                          : '$unreadCount',
+                                                      unreadCount > 9 ? '9+' : '$unreadCount',
                                                       style: const TextStyle(
                                                         color: Colors.white,
                                                         fontSize: 10,
-                                                        fontWeight:
-                                                            FontWeight.bold,
+                                                        fontWeight: FontWeight.bold,
                                                       ),
                                                     ),
                                                   ),
@@ -264,19 +348,24 @@ class _SupplierHomePageState extends State<SupplierHomePage> {
                                         );
                                       },
                                     ),
-
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 24),
-                              Text(
-                                'Dashboard',
-                                style: theme.textTheme.titleLarge?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
+                              const SizedBox(height: 30),
+                              Container(
+                                height: 3,
+                                width: 60,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppTheme.primaryColor,
+                                      Colors.white.withOpacity(0.5),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 20),
                               Row(
                                 children: [
                                   Expanded(
@@ -337,8 +426,10 @@ class _SupplierHomePageState extends State<SupplierHomePage> {
                       children: [
                         Text(
                           'Quick Actions',
-                          style: theme.textTheme.titleMedium?.copyWith(
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -388,22 +479,28 @@ class _SupplierHomePageState extends State<SupplierHomePage> {
                         ),
                         const SizedBox(height: 32),
                         if (pending.isNotEmpty || approved.isNotEmpty) ...[
-                          Row(
+                            Row(
                             children: [
                               Text(
                                 'Active Tasks',
-                                style: theme.textTheme.titleMedium?.copyWith(
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimary,
                                 ),
                               ),
                               const Spacer(),
-                              IconButton(
+                              TextButton(
                                 onPressed: () =>
                                     context.push('/supplier/pending-requests'),
-                                icon:  Text('View all', style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                  color: AppTheme.primaryColor
-                                ),),
+                                child: Text(
+                                  'View all',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -449,18 +546,24 @@ class _SupplierHomePageState extends State<SupplierHomePage> {
                           children: [
                             Text(
                               'Recent Transactions',
-                              style: theme.textTheme.titleMedium?.copyWith(
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
                                 fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary,
                               ),
                             ),
                             const Spacer(),
                             TextButton(
                               onPressed: () =>
                                   context.push('/supplier/transactions'),
-                              child:  Text('View all', style: theme.textTheme.titleSmall?.copyWith(
+                              child: Text(
+                                'View all',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: AppTheme.primaryColor
-                              ),),
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -536,18 +639,16 @@ class _PageWrapper extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: _bgTop,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: const SizedBox.shrink(), // No back button in bottom nav mode
+      extendBodyBehindAppBar: true ,
+      appBar: GlassAppBar(
+        automaticallyImplyLeading: false,
+        leading: const SizedBox.shrink(),
         title: Text(
           title,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
           ),
         ),
-        centerTitle: true,
       ),
       body: child,
     );
@@ -563,18 +664,20 @@ class _PendingRequestsBody extends StatelessWidget {
         final requests = loyaltyProvider.pendingRequests;
 
         if (requests.isEmpty) {
-          return Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: AppTheme.backgroundColor,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(25),
+          return SafeArea(
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(25),
+                ),
               ),
-            ),
-            child: const EmptyStateCard(
-              icon: Icons.pending_actions_outlined,
-              title: 'No pending requests',
-              subtitle: 'New discount requests from customers will appear here',
+              child: const EmptyStateCard(
+                icon: Icons.pending_actions_outlined,
+                title: 'No pending requests',
+                subtitle: 'New discount requests from customers will appear here',
+              ),
             ),
           );
         }
@@ -587,16 +690,18 @@ class _PendingRequestsBody extends StatelessWidget {
               top: Radius.circular(25),
             ),
           ),
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
-            itemCount: requests.length,
-            itemBuilder: (context, index) {
-              final request = requests[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _EmbeddedRequestCard(request: request),
-              );
-            },
+          child: SafeArea(
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
+              itemCount: requests.length,
+              itemBuilder: (context, index) {
+                final request = requests[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _EmbeddedRequestCard(request: request),
+                );
+              },
+            ),
           ),
         );
       },
@@ -1217,18 +1322,20 @@ class _TransactionsBody extends StatelessWidget {
               ..sort((a, b) => b.completedAt.compareTo(a.completedAt));
 
         if (transactions.isEmpty) {
-          return Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: AppTheme.backgroundColor,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(25),
+          return SafeArea(
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(25),
+                ),
               ),
-            ),
-            child: const EmptyStateCard(
-              icon: Icons.receipt_long_outlined,
-              title: 'No transactions yet',
-              subtitle: 'Completed transactions will appear here',
+              child: const EmptyStateCard(
+                icon: Icons.receipt_long_outlined,
+                title: 'No transactions yet',
+                subtitle: 'Completed transactions will appear here',
+              ),
             ),
           );
         }
@@ -1252,111 +1359,104 @@ class _TransactionsBody extends StatelessWidget {
               top: Radius.circular(25),
             ),
           ),
-          child: Column(
-            children: [
-              // Summary Card
-              Container(
-                margin: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppTheme.primaryColor,
-                      AppTheme.primaryDark,
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.analytics_rounded,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Total Summary',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Summary Card
+                Container(
+                  margin: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppTheme.primaryColor,
+                        AppTheme.primaryDark,
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    _TransactionSummaryRow(
-                      label: 'Total Bill Amount',
-                      value: NumberFormat.currency(
-                        symbol: 'LKR ',
-                        decimalDigits: 0,
-                      ).format(totalBillAmount),
-                    ),
-                    const SizedBox(height: 12),
-                    Divider(
-                      color: Colors.white.withOpacity(0.2),
-                      height: 1,
-                    ),
-                    const SizedBox(height: 12),
-                    _TransactionSummaryRow(
-                      label: 'Total Discount Given',
-                      value: NumberFormat.currency(
-                        symbol: 'LKR ',
-                        decimalDigits: 0,
-                      ).format(totalDiscount),
-                      valueColor: AppTheme.successColor,
-                    ),
-                    const SizedBox(height: 12),
-                    Divider(
-                      color: Colors.white.withOpacity(0.2),
-                      height: 1,
-                    ),
-                    const SizedBox(height: 12),
-                    _TransactionSummaryRow(
-                      label: 'Total Final Amount',
-                      value: NumberFormat.currency(
-                        symbol: 'LKR ',
-                        decimalDigits: 0,
-                      ).format(totalFinalAmount),
-                      isBold: true,
-                    ),
-                  ],
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.analytics_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Total Summary',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      _TransactionSummaryRow(
+                        label: 'Total Bill Amount',
+                        value: CurrencyFormat.lkr(totalBillAmount, decimalDigits: 0),
+                      ),
+                      const SizedBox(height: 12),
+                      Divider(
+                        color: Colors.white.withOpacity(0.2),
+                        height: 1,
+                      ),
+                      const SizedBox(height: 12),
+                      _TransactionSummaryRow(
+                        label: 'Total Discount Given',
+                        value: CurrencyFormat.lkr(totalDiscount, decimalDigits: 0),
+                        valueColor: AppTheme.successColor,
+                      ),
+                      const SizedBox(height: 12),
+                      Divider(
+                        color: Colors.white.withOpacity(0.2),
+                        height: 1,
+                      ),
+                      const SizedBox(height: 12),
+                      _TransactionSummaryRow(
+                        label: 'Total Final Amount',
+                        value: CurrencyFormat.lkr(totalFinalAmount, decimalDigits: 0),
+                        isBold: true,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-
-              // Transactions List
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 130),
-                  itemCount: transactions.length,
-                  itemBuilder: (context, index) {
-                    final transaction = transactions[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: _EmbeddedTransactionCard(transaction: transaction),
-                    );
-                  },
+            
+                // Transactions List
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 130),
+                    itemCount: transactions.length,
+                    itemBuilder: (context, index) {
+                      final transaction = transactions[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _EmbeddedTransactionCard(transaction: transaction),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -1425,8 +1525,7 @@ class _EmbeddedTransactionCardState extends State<_EmbeddedTransactionCard> {
   }
 
   String _money(double amount) {
-    final fmt = NumberFormat.currency(symbol: 'LKR ', decimalDigits: 0);
-    return fmt.format(amount);
+    return CurrencyFormat.lkr(amount, decimalDigits: 0);
   }
 
   @override
@@ -1804,198 +1903,200 @@ class _ProfileBody extends StatelessWidget {
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Profile Header Card
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppTheme.primaryColor,
-                        AppTheme.primaryDark,
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Profile Header Card
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppTheme.primaryColor,
+                          AppTheme.primaryDark,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryColor.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
                       ],
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Avatar
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
-                            width: 3,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            initials,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 36,
+                    child: Column(
+                      children: [
+                        // Avatar
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 3,
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        userName,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        userEmail,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white.withOpacity(0.9),
-                            ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Supplier',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          child: Center(
+                            child: Text(
+                              initials,
+                              style: const TextStyle(
                                 color: Colors.white,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 36,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          userName,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
                               ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          userEmail,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Supplier',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Account Information Section
-                const _ProfileSectionHeader(
-                  title: 'Account Information',
-                  icon: Icons.person_outline_rounded,
-                ),
-                const SizedBox(height: 12),
-                _ProfileInfoCard(
-                  icon: Icons.badge_rounded,
-                  iconColor: AppTheme.primaryColor,
-                  title: 'Supplier ID',
-                  value: userId,
-                ),
-                const SizedBox(height: 12),
-                _ProfileInfoCard(
-                  icon: Icons.email_rounded,
-                  iconColor: AppTheme.secondaryColor,
-                  title: 'Email',
-                  value: userEmail,
-                ),
-                const SizedBox(height: 12),
-                _ProfileInfoCard(
-                  icon: Icons.store_rounded,
-                  iconColor: AppTheme.successColor,
-                  title: 'Store Name',
-                  value: userName,
-                ),
-
-                const SizedBox(height: 32),
-
-                // Settings Section
-                const _ProfileSectionHeader(
-                  title: 'Settings',
-                  icon: Icons.settings_outlined,
-                ),
-                const SizedBox(height: 12),
-                _ProfileMenuCard(
-                  icon: Icons.notifications_outlined,
-                  iconColor: AppTheme.warningColor,
-                  title: 'Notifications',
-                  subtitle: 'Manage notification preferences',
-                  onTap: () {
-                    Toast.info(context, 'Notifications settings coming soon');
-                  },
-                ),
-                const SizedBox(height: 12),
-                _ProfileMenuCard(
-                  icon: Icons.security_rounded,
-                  iconColor: AppTheme.infoColor,
-                  title: 'Privacy & Security',
-                  subtitle: 'Manage your privacy settings',
-                  onTap: () {
-                    Toast.info(context, 'Privacy settings coming soon');
-                  },
-                ),
-                const SizedBox(height: 12),
-                _ProfileMenuCard(
-                  icon: Icons.help_outline_rounded,
-                  iconColor: AppTheme.secondaryColor,
-                  title: 'Help & Support',
-                  subtitle: 'Get help and contact support',
-                  onTap: () {
-                    Toast.info(context, 'Help & Support coming soon');
-                  },
-                ),
-                const SizedBox(height: 12),
-                _ProfileMenuCard(
-                  icon: Icons.info_outline_rounded,
-                  iconColor: AppTheme.primaryColor,
-                  title: 'About',
-                  subtitle: 'App version and information',
-                  onTap: () {
-                    Toast.info(context, 'About coming soon');
-                  },
-                ),
-
-                const SizedBox(height: 32),
-
-                // Logout Button
-                _ProfileLogoutButton(
-                  onTap: () async {
-                    final confirmed = await ConfirmationDialog.show(
-                      context: context,
-                      title: 'Logout',
-                      message: 'Are you sure you want to logout?',
-                      icon: Icons.logout_rounded,
-                      iconColor: AppTheme.errorColor,
-                      confirmText: 'Logout',
-                      confirmColor: AppTheme.errorColor,
-                      onConfirm: () => Navigator.pop(context, true),
-                      onCancel: () => Navigator.pop(context, false),
-                    );
-
-
-                    if (confirmed == true && context.mounted) {
-                      await authProvider.logout();
-                      if (context.mounted) {
-                        context.go('/login');
+              
+                  const SizedBox(height: 40),
+              
+                  // Account Information Section
+                  const _ProfileSectionHeader(
+                    title: 'Account Information',
+                    icon: Icons.person_outline_rounded,
+                  ),
+                  const SizedBox(height: 12),
+                  _ProfileInfoCard(
+                    icon: Icons.badge_rounded,
+                    iconColor: AppTheme.primaryColor,
+                    title: 'Supplier ID',
+                    value: userId,
+                  ),
+                  const SizedBox(height: 12),
+                  _ProfileInfoCard(
+                    icon: Icons.email_rounded,
+                    iconColor: AppTheme.secondaryColor,
+                    title: 'Email',
+                    value: userEmail,
+                  ),
+                  const SizedBox(height: 12),
+                  _ProfileInfoCard(
+                    icon: Icons.store_rounded,
+                    iconColor: AppTheme.successColor,
+                    title: 'Store Name',
+                    value: userName,
+                  ),
+              
+                  const SizedBox(height: 32),
+              
+                  // Settings Section
+                  const _ProfileSectionHeader(
+                    title: 'Settings',
+                    icon: Icons.settings_outlined,
+                  ),
+                  const SizedBox(height: 12),
+                  _ProfileMenuCard(
+                    icon: Icons.notifications_outlined,
+                    iconColor: AppTheme.warningColor,
+                    title: 'Notifications',
+                    subtitle: 'Manage notification preferences',
+                    onTap: () {
+                      Toast.info(context, 'Notifications settings coming soon');
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _ProfileMenuCard(
+                    icon: Icons.security_rounded,
+                    iconColor: AppTheme.infoColor,
+                    title: 'Privacy & Security',
+                    subtitle: 'Manage your privacy settings',
+                    onTap: () {
+                      Toast.info(context, 'Privacy settings coming soon');
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _ProfileMenuCard(
+                    icon: Icons.help_outline_rounded,
+                    iconColor: AppTheme.secondaryColor,
+                    title: 'Help & Support',
+                    subtitle: 'Get help and contact support',
+                    onTap: () {
+                      Toast.info(context, 'Help & Support coming soon');
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _ProfileMenuCard(
+                    icon: Icons.info_outline_rounded,
+                    iconColor: AppTheme.primaryColor,
+                    title: 'About',
+                    subtitle: 'App version and information',
+                    onTap: () {
+                      Toast.info(context, 'About coming soon');
+                    },
+                  ),
+              
+                  const SizedBox(height: 32),
+              
+                  // Logout Button
+                  _ProfileLogoutButton(
+                    onTap: () async {
+                      final confirmed = await ConfirmationDialog.show(
+                        context: context,
+                        title: 'Logout',
+                        message: 'Are you sure you want to logout?',
+                        icon: Icons.logout_rounded,
+                        iconColor: AppTheme.errorColor,
+                        confirmText: 'Logout',
+                        confirmColor: AppTheme.errorColor,
+                        onConfirm: () => Navigator.pop(context, true),
+                        onCancel: () => Navigator.pop(context, false),
+                      );
+              
+              
+                      if (confirmed == true && context.mounted) {
+                        await authProvider.logout();
+                        if (context.mounted) {
+                          context.go('/login');
+                        }
                       }
-                    }
-                  },
-                ),
-
-                const SizedBox(height: 24),
-              ],
+                    },
+                  ),
+              
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         );
@@ -2229,6 +2330,92 @@ class _ProfileLogoutButton extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// Wave painter for supplier dashboard (matches splash/login)
+class _SupplierWavePainter extends CustomPainter {
+  final double waveValue;
+  final Color primaryColor;
+
+  _SupplierWavePainter({
+    required this.waveValue,
+    required this.primaryColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = primaryColor.withOpacity(0.12)
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    final waveHeight = 40.0;
+    final waveLength = size.width / 2;
+
+    for (int i = 0; i < 3; i++) {
+      path.reset();
+      path.moveTo(0, size.height * 0.7 + i * 30);
+      for (double x = 0; x <= size.width; x++) {
+        final y = waveHeight *
+                math.sin((x / waveLength * 2 * math.pi) + (waveValue + i * 0.5)) +
+            size.height * 0.7 +
+            i * 30;
+        path.lineTo(x, y);
+      }
+      path.lineTo(size.width, size.height);
+      path.lineTo(0, size.height);
+      path.close();
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SupplierWavePainter oldDelegate) {
+    return oldDelegate.waveValue != waveValue;
+  }
+}
+
+// Floating particles for supplier dashboard (matches splash/login)
+class _SupplierFloatingParticles extends StatelessWidget {
+  final double animationValue;
+
+  const _SupplierFloatingParticles({required this.animationValue});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    return Stack(
+      children: List.generate(8, (index) {
+        final delay = index * 0.2;
+        final offset = (animationValue + delay) % 1.0;
+        final size = 4.0 + (index % 3) * 2.0;
+        final left = (index * 12.5) / 100.0 * screenSize.width;
+        final top = 20.0 + (offset * 60.0);
+        return Positioned(
+          left: left,
+          top: top,
+          child: Opacity(
+            opacity: 0.25 + (math.sin(offset * math.pi) * 0.25),
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withOpacity(0.4),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }),
     );
   }
 }

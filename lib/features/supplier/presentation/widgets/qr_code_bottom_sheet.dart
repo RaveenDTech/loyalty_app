@@ -25,7 +25,7 @@ class QRCodeBottomSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final bottomSheetColor = isDark
-        ? const Color(0xFF010C1B) // Dark charcoal
+        ? AppTheme.surfaceColor // Dark charcoal
         : Colors.white;
     final textColor = isDark ? Colors.white : Colors.black87;
     final secondaryTextColor = isDark ? Colors.white70 : Colors.black54;
@@ -58,135 +58,137 @@ class QRCodeBottomSheet extends StatelessWidget {
               topRight: Radius.circular(32),
             ),
           ),
-          child: Column(
-            children: [
-              // Header with title and close button
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'My QR Code',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: textColor,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.close_rounded,
-                        color: textColor,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ),
-
-              // QR Code Section
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Header with title and close button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const SizedBox(height: 20),
-
-                      // QR Code with green border
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: const Color(0xFF10B981), // Bright green
-                            width: 10,
-                          ),
-                        ),
-                        child: QRGenerator.createQRWidget(
-                          supplierId: supplierId,
-                          supplierName: supplierName,
-                          size: 180,
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Identifier Label (pill-shaped)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981), // Teal/primary-blue
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          identifier,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Instructional Text
                       Text(
-                        'Show this QR Code to your friends to invite them to play the games together.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: secondaryTextColor,
-                          height: 1.5,
+                        'My QR Code',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: textColor,
                         ),
-                        textAlign: TextAlign.center,
                       ),
-
-                      const SizedBox(height: 40),
+                      IconButton(
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: textColor,
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
                     ],
                   ),
                 ),
-              ),
-
-              // Action Buttons
-              Container(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _ActionButton(
-                        icon: Icons.download_rounded,
-                        label: 'Save',
-                        backgroundColor: buttonBgColor,
-                        borderColor: buttonBorderColor,
-                        iconColor: textColor,
-                        textColor: textColor,
-                        onTap: () {
-                          Toast.info(context, 'Save functionality coming soon');
-                        },
-                      ),
+            
+                // QR Code Section
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 20),
+            
+                        // QR Code with green border
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: const Color(0xFF10B981), // Bright green
+                              width: 10,
+                            ),
+                          ),
+                          child: QRGenerator.createQRWidget(
+                            supplierId: supplierId,
+                            supplierName: supplierName,
+                            size: 180,
+                          ),
+                        ),
+            
+                        const SizedBox(height: 20),
+            
+                        // Identifier Label (pill-shaped)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981), // Teal/primary-blue
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            identifier,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+            
+                        const SizedBox(height: 24),
+            
+                        // Instructional Text
+                        Text(
+                          'Show this QR Code to your friends to invite them to play the games together.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: secondaryTextColor,
+                            height: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+            
+                        const SizedBox(height: 40),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _ActionButton(
-                        icon: Icons.share_rounded,
-                        label: 'Share',
-                        backgroundColor: buttonBgColor,
-                        borderColor: buttonBorderColor,
-                        iconColor: textColor,
-                        textColor: textColor,
-                        onTap: () {
-                          Toast.info(context, 'Share functionality coming soon');
-                        },
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+            
+                // Action Buttons
+                Container(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.download_rounded,
+                          label: 'Save',
+                          backgroundColor: buttonBgColor,
+                          borderColor: buttonBorderColor,
+                          iconColor: textColor,
+                          textColor: textColor,
+                          onTap: () {
+                            Toast.info(context, 'Save functionality coming soon');
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ActionButton(
+                          icon: Icons.share_rounded,
+                          label: 'Share',
+                          backgroundColor: buttonBgColor,
+                          borderColor: buttonBorderColor,
+                          iconColor: textColor,
+                          textColor: textColor,
+                          onTap: () {
+                            Toast.info(context, 'Share functionality coming soon');
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

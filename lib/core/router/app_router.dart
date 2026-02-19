@@ -13,6 +13,7 @@ import '../../features/supplier/presentation/pages/supplier_transactions_page.da
 import '../../features/supplier/presentation/pages/supplier_qr_code_page.dart';
 import '../../features/supplier/presentation/pages/supplier_profile_page.dart';
 import '../../features/customer/presentation/pages/customer_profile_page.dart';
+import '../../features/customer/presentation/pages/dsi_loyalty_page.dart';
 import '../../features/customer/presentation/pages/vendor_selection_page.dart';
 import '../../features/customer/presentation/pages/voucher_purchase_page.dart';
 import '../../features/customer/presentation/pages/voucher_success_page.dart';
@@ -49,6 +50,10 @@ class AppRouter {
       GoRoute(
         path: '/customer/profile',
         builder: (context, state) => const CustomerProfilePage(),
+      ),
+      GoRoute(
+        path: '/customer/dsi-loyalty',
+        builder: (context, state) => const DsiLoyaltyPage(),
       ),
       GoRoute(
         path: '/customer/vendor-selection',
