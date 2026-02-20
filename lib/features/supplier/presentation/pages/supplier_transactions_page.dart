@@ -6,7 +6,9 @@ import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/currency_format.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
-import '../widgets/empty_state_card.dart';
+import '../../../../core/widgets/empty_state_card.dart';
+import '../../../../core/widgets/summary_row.dart';
+import '../../../../core/widgets/detail_row.dart';
 
 class SupplierTransactionsPage extends StatelessWidget {
   const SupplierTransactionsPage({super.key});
@@ -66,6 +68,10 @@ class SupplierTransactionsPage extends StatelessWidget {
             totalDiscount += transaction.discountAmount;
             totalFinalAmount += transaction.finalAmount;
           }
+
+          final transactionCount = transactions.length;
+          final customerCount =
+              transactions.map((t) => t.customerId).toSet().length;
 
           return Container(
             width: double.infinity,
@@ -127,7 +133,22 @@ class SupplierTransactionsPage extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 24),
-                        _SummaryRow(
+                        SummaryRow(
+                          label: 'Number of Transactions',
+                          value: transactionCount.toString(),
+                        ),
+                        const SizedBox(height: 12),
+                        SummaryRow(
+                          label: 'Customer Count',
+                          value: customerCount.toString(),
+                        ),
+                        const SizedBox(height: 12),
+                        Divider(
+                          color: Colors.white.withOpacity(0.2),
+                          height: 1,
+                        ),
+                        const SizedBox(height: 12),
+                        SummaryRow(
                           label: 'Total Bill Amount',
                           value: CurrencyFormat.lkr(totalBillAmount, decimalDigits: 0),
                         ),
@@ -137,7 +158,7 @@ class SupplierTransactionsPage extends StatelessWidget {
                           height: 1,
                         ),
                         const SizedBox(height: 12),
-                        _SummaryRow(
+                        SummaryRow(
                           label: 'Total Discount Given',
                           value: CurrencyFormat.lkr(totalDiscount, decimalDigits: 0),
                           valueColor: AppTheme.successColor,
@@ -148,7 +169,7 @@ class SupplierTransactionsPage extends StatelessWidget {
                           height: 1,
                         ),
                         const SizedBox(height: 12),
-                        _SummaryRow(
+                        SummaryRow(
                           label: 'Total Final Amount',
                           value: CurrencyFormat.lkr(totalFinalAmount, decimalDigits: 0),
                           isBold: true,
@@ -177,45 +198,6 @@ class SupplierTransactionsPage extends StatelessWidget {
           );
         },
       ),
-    );
-  }
-}
-
-class _SummaryRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-  final bool isBold;
-
-  const _SummaryRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-    this.isBold = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor ?? Colors.white,
-            fontSize: isBold ? 18 : 15,
-            fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -442,7 +424,7 @@ class _TransactionCardState extends State<_TransactionCard> {
                             ),
                             child: Column(
                               children: [
-                                _DetailRow(
+                                DetailRow(
                                   label: 'Bill Amount',
                                   value: _money(widget.transaction.billAmount),
                                 ),
@@ -452,7 +434,7 @@ class _TransactionCardState extends State<_TransactionCard> {
                                   height: 1,
                                 ),
                                 const SizedBox(height: 12),
-                                _DetailRow(
+                                DetailRow(
                                   label: 'Discount',
                                   value: _money(widget.transaction.discountAmount),
                                   valueColor: AppTheme.successColor,
@@ -463,7 +445,7 @@ class _TransactionCardState extends State<_TransactionCard> {
                                   height: 1,
                                 ),
                                 const SizedBox(height: 12),
-                                _DetailRow(
+                                DetailRow(
                                   label: 'Final Amount',
                                   value: _money(widget.transaction.finalAmount),
                                   isBold: true,
@@ -550,41 +532,3 @@ class _TransactionCardState extends State<_TransactionCard> {
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-  final bool isBold;
-
-  const _DetailRow({
-    required this.label,
-    required this.value,
-    this.valueColor,
-    this.isBold = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: AppTheme.textSecondary,
-            fontSize: 13,
-          ),
-        ),
-        Text(
-          value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: valueColor ?? AppTheme.textPrimary,
-            fontSize: isBold ? 16 : 14,
-            fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
+import 'wave_painter.dart';
+import 'floating_particles.dart';
 
 class SplashScreen extends StatefulWidget {
   final VoidCallback onInitializationComplete;
@@ -150,10 +152,10 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return AnnotatedRegion(
       value: const SystemUiOverlayStyle(
-        systemNavigationBarColor: Color(0xFF2A69DF),
         systemNavigationBarIconBrightness: Brightness.light,
         statusBarIconBrightness: Brightness.light,),
       child: Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -162,7 +164,7 @@ class _SplashScreenState extends State<SplashScreen>
               colors: [
                 AppTheme.backgroundColor,
                 AppTheme.primaryDark,
-                AppTheme.primaryColor.withOpacity(0.8),
+                AppTheme.primaryColor.withOpacity(0.2),
               ],
               stops: const [0.0, 0.6, 1.0],
             ),
@@ -175,7 +177,7 @@ class _SplashScreenState extends State<SplashScreen>
                 builder: (context, child) {
                   return Positioned.fill(
                     child: CustomPaint(
-                      painter: _WavePainter(
+                      painter: WavePainter(
                         waveValue: _waveAnimation.value,
                         primaryColor: AppTheme.primaryColor,
                       ),
@@ -188,7 +190,7 @@ class _SplashScreenState extends State<SplashScreen>
               AnimatedBuilder(
                 animation: _particleController,
                 builder: (context, child) {
-                  return _FloatingParticles(
+                  return FloatingParticles(
                     animationValue: _particleController.value,
                   );
                 },
@@ -288,7 +290,7 @@ class _SplashScreenState extends State<SplashScreen>
                                   gradient: LinearGradient(
                                     colors: [
                                       AppTheme.primaryColor,
-                                      Colors.white.withOpacity(0.5),
+                                      Colors.white.withOpacity(0.0),
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(2),
@@ -326,10 +328,10 @@ class _SplashScreenState extends State<SplashScreen>
                                     child: LinearProgressIndicator(
                                       value: _progressAnimation.value,
                                       backgroundColor: Colors.white.withOpacity(0.1),
-                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                      valueColor: const AlwaysStoppedAnimation<Color>(
                                         Colors.white,
                                       ),
-                                      minHeight: 3,
+                                      minHeight: 4,
                                     ),
                                   );
                                 },
@@ -358,99 +360,6 @@ class _SplashScreenState extends State<SplashScreen>
           ),
         ),
       ),
-    );
-  }
-}
-
-// Custom painter for wave effect
-class _WavePainter extends CustomPainter {
-  final double waveValue;
-  final Color primaryColor;
-
-  _WavePainter({
-    required this.waveValue,
-    required this.primaryColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = primaryColor.withOpacity(0.15)
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    final waveHeight = 40.0;
-    final waveLength = size.width / 2;
-
-    // Draw multiple waves
-    for (int i = 0; i < 3; i++) {
-      path.reset();
-      path.moveTo(0, size.height * 0.7 + i * 30);
-
-      for (double x = 0; x <= size.width; x++) {
-        final y = waveHeight *
-                math.sin((x / waveLength * 2 * math.pi) +
-                    (waveValue + i * 0.5)) +
-            size.height * 0.7 +
-            i * 30;
-        path.lineTo(x, y);
-      }
-
-      path.lineTo(size.width, size.height);
-      path.lineTo(0, size.height);
-      path.close();
-
-      canvas.drawPath(path, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_WavePainter oldDelegate) {
-    return oldDelegate.waveValue != waveValue;
-  }
-}
-
-// Floating particles widget
-class _FloatingParticles extends StatelessWidget {
-  final double animationValue;
-
-  const _FloatingParticles({required this.animationValue});
-
-  @override
-  Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    
-    return Stack(
-      children: List.generate(8, (index) {
-        final delay = index * 0.2;
-        final offset = (animationValue + delay) % 1.0;
-        final size = 4.0 + (index % 3) * 2.0;
-        final left = (index * 12.5) / 100.0 * screenSize.width;
-        final top = 20.0 + (offset * 60.0);
-
-        return Positioned(
-          left: left,
-          top: top,
-          child: Opacity(
-            opacity: 0.3 + (math.sin(offset * math.pi) * 0.3),
-            child: Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.5),
-                    blurRadius: 4,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }),
     );
   }
 }

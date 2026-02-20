@@ -9,7 +9,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/confirmation_dialog.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/toast.dart';
-import '../widgets/empty_state_card.dart';
+import '../../../../core/widgets/empty_state_card.dart';
 import 'bill_upload_page.dart';
 
 class PendingRequestsPage extends StatelessWidget {
@@ -433,7 +433,7 @@ class _RequestCardState extends State<_RequestCard> {
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
-                                  flex: 2,
+                                  flex: 1,
                                   child: _ActionButton(
                                     icon: Icons.check_circle_rounded,
                                     label: 'Approve Request',

@@ -1,105 +1,98 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/providers/loyalty_provider.dart';
 import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/loyalty_provider.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/empty_state_card.dart';
+import 'tab_page_wrapper.dart';
 
-class CustomerRequestsPage extends StatelessWidget {
-  const CustomerRequestsPage({super.key});
+/// Tab wrapper for My Requests: list of requests or empty state.
+class CustomerRequestsTab extends StatelessWidget {
+  const CustomerRequestsTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    const Color _bgTop = Color(0xFF080E27);
+    return TabPageWrapper(
+      title: 'My Requests',
+      child: CustomerRequestsBody(),
+    );
+  }
+}
 
-    return Scaffold(
-      backgroundColor: _bgTop,
-      extendBodyBehindAppBar: true ,
-      appBar: GlassAppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'My Requests',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-      body: Consumer2<LoyaltyProvider, AuthProvider>(
-        builder: (context, loyaltyProvider, authProvider, _) {
-          final customerId = authProvider.userId;
+class CustomerRequestsBody extends StatelessWidget {
+  const CustomerRequestsBody({super.key});
 
-          // Get all customer requests (pending, approved, rejected)
-          final allRequests = [
-            ...loyaltyProvider.pendingRequests
-                .where((r) => r.customerId == customerId),
-            ...loyaltyProvider.approvedRequests
-                .where((r) => r.customerId == customerId),
-            // Note: If rejected requests are stored separately, add them here
-          ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  @override
+  Widget build(BuildContext context) {
+    return Consumer2<LoyaltyProvider, AuthProvider>(
+      builder: (context, loyaltyProvider, authProvider, _) {
+        final customerId = authProvider.userId;
 
-          if (allRequests.isEmpty) {
-            return SafeArea(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: AppTheme.backgroundColor,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(25),
-                  ),
-                ),
-                child: const EmptyStateCard(
-                  icon: Icons.request_quote_outlined,
-                  title: 'No requests yet',
-                  subtitle: 'Scan a QR code to request a discount from suppliers',
+        // Get all customer requests (pending, approved, rejected)
+        final allRequests = [
+          ...loyaltyProvider.pendingRequests
+              .where((r) => r.customerId == customerId),
+          ...loyaltyProvider.approvedRequests
+              .where((r) => r.customerId == customerId),
+        ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+        if (allRequests.isEmpty) {
+          return SafeArea(
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(25),
                 ),
               ),
-            );
-          }
-
-          return Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: AppTheme.backgroundColor,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(25),
+              child: const EmptyStateCard(
+                icon: Icons.request_quote_outlined,
+                title: 'No requests yet',
+                subtitle: 'Scan a QR code to request a discount from suppliers',
               ),
             ),
+          );
+        }
+
+        return Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            color: AppTheme.backgroundColor,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(25),
+            ),
+          ),
+          child: SafeArea(
             child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
               itemCount: allRequests.length,
               itemBuilder: (context, index) {
                 final request = allRequests[index];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
-                  child: _RequestCard(request: request),
+                  child: _EmbeddedRequestCard(request: request),
                 );
               },
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
 
-class _RequestCard extends StatefulWidget {
+class _EmbeddedRequestCard extends StatefulWidget {
   final dynamic request;
 
-  const _RequestCard({required this.request});
+  const _EmbeddedRequestCard({required this.request});
 
   @override
-  State<_RequestCard> createState() => _RequestCardState();
+  State<_EmbeddedRequestCard> createState() => _EmbeddedRequestCardState();
 }
 
-class _RequestCardState extends State<_RequestCard> {
+class _EmbeddedRequestCardState extends State<_EmbeddedRequestCard> {
   bool _isExpanded = false;
 
   String _getTimeAgo(DateTime date) {
@@ -357,27 +350,27 @@ class _RequestCardState extends State<_RequestCard> {
                             ),
                             child: Column(
                               children: [
-                                _DetailRow(
+                                _RequestDetailRow(
                                   label: 'Request ID',
                                   value: widget.request.id,
                                 ),
                                 const SizedBox(height: 12),
-                                Divider(
+                                const Divider(
                                   color: AppTheme.borderColor,
                                   height: 1,
                                 ),
                                 const SizedBox(height: 12),
-                                _DetailRow(
+                                _RequestDetailRow(
                                   label: 'Supplier',
                                   value: supplierName,
                                 ),
                                 const SizedBox(height: 12),
-                                Divider(
+                                const Divider(
                                   color: AppTheme.borderColor,
                                   height: 1,
                                 ),
                                 const SizedBox(height: 12),
-                                _DetailRow(
+                                _RequestDetailRow(
                                   label: 'Status',
                                   value: statusText,
                                   valueColor: statusColor,
@@ -390,7 +383,7 @@ class _RequestCardState extends State<_RequestCard> {
                           // Date and Time
                           Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.calendar_today_rounded,
                                 size: 14,
                                 color: AppTheme.textSecondary,
@@ -403,7 +396,7 @@ class _RequestCardState extends State<_RequestCard> {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Icon(
+                              const Icon(
                                 Icons.access_time_rounded,
                                 size: 14,
                                 color: AppTheme.textSecondary,
@@ -421,7 +414,7 @@ class _RequestCardState extends State<_RequestCard> {
                             const SizedBox(height: 16),
                             Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.check_circle_rounded,
                                   size: 14,
                                   color: AppTheme.successColor,
@@ -440,7 +433,7 @@ class _RequestCardState extends State<_RequestCard> {
                             const SizedBox(height: 16),
                             Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.cancel_rounded,
                                   size: 14,
                                   color: AppTheme.errorColor,
@@ -467,13 +460,13 @@ class _RequestCardState extends State<_RequestCard> {
   }
 }
 
-class _DetailRow extends StatelessWidget {
+class _RequestDetailRow extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
   final bool isBold;
 
-  const _DetailRow({
+  const _RequestDetailRow({
     required this.label,
     required this.value,
     this.valueColor,

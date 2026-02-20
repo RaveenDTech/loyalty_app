@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/toast.dart';
@@ -147,7 +148,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               colors: [
                 AppTheme.backgroundColor,
                 AppTheme.primaryDark,
-                AppTheme.primaryColor.withOpacity(0.8),
+                AppTheme.primaryColor.withOpacity(0.2),
               ],
               stops: const [0.0, 0.6, 1.0],
             ),
@@ -183,17 +184,27 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               SafeArea(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
+                    final width = MediaQuery.sizeOf(context).width;
+                    final maxContentWidth = width >= kBreakpointMobile
+                        ? kMaxFormWidth
+                        : double.infinity;
                     return SingleChildScrollView(
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
                           minHeight: constraints.maxHeight,
                         ),
                         child: IntrinsicHeight(
-                          child: Column(
-                            children: [
-                              const SizedBox(height: 40),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: maxContentWidth,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const SizedBox(height: 40),
 
-                              /// LOGO + TITLE
+                                  /// LOGO + TITLE
                               AnimatedBuilder(
                                 animation: _logoController,
                                 builder: (context, child) {
@@ -455,7 +466,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                                           type: MaterialType.transparency,
                                           child: InkWell(
                                             onTap: () {
-                                              // TODO: navigate to sign up page
+                                              context.push('/onboarding/epf');
                                             },
                                             onHighlightChanged:
                                                 (isHighlighted) {
@@ -496,7 +507,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                           ),
                         ),
                       ),
-                    );
+                    ),
+                    ),
+                  );
                   },
                 ),
               ),

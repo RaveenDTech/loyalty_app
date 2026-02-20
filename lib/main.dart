@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
+import 'package:sizer/sizer.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -11,23 +13,25 @@ import 'core/providers/voucher_provider.dart';
 import 'core/widgets/splash_screen.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-FlutterLocalNotificationsPlugin();
+    FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize local notifications
-  await _initializeNotifications();
+  // Initialize local notifications (mobile only; web uses browser notifications)
+  if (!kIsWeb) {
+    await _initializeNotifications();
+  }
 
   runApp(const MyApp());
 }
 
 Future<void> _initializeNotifications() async {
   const AndroidInitializationSettings initializationSettingsAndroid =
-  AndroidInitializationSettings('@mipmap/ic_launcher');
+      AndroidInitializationSettings('@mipmap/ic_launcher');
 
   const InitializationSettings initializationSettings =
-  InitializationSettings(
+      InitializationSettings(
     android: initializationSettingsAndroid,
     iOS: DarwinInitializationSettings(),
   );
@@ -71,11 +75,15 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => LoyaltyProvider()),
         ChangeNotifierProvider(create: (_) => VoucherProvider()),
       ],
-      child: MaterialApp.router(
-        title: 'DSI Loyalty App',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        routerConfig: AppRouter.router,
+      child: Sizer(
+        builder: (context, orientation, deviceType) {
+          return MaterialApp.router(
+            title: 'DSI Loyalty App',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            routerConfig: AppRouter.router,
+          );
+        },
       ),
     );
   }

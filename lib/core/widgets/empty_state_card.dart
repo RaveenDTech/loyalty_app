@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_theme.dart';
+import '../theme/app_theme.dart';
 
+/// Shared empty state used across customer, supplier, and shared features.
 class EmptyStateCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -16,14 +17,13 @@ class EmptyStateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon container with gradient background
             Container(
               width: 120,
               height: 120,

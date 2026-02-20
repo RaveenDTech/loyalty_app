@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -53,6 +54,7 @@ class _QRScanPageState extends State<QRScanPage>
   @override
   void initState() {
     super.initState();
+    if (kIsWeb) return;
     WidgetsBinding.instance.addObserver(this);
     _animationController = AnimationController(
       vsync: this,
@@ -510,15 +512,40 @@ class _QRScanPageState extends State<QRScanPage>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _animationController.dispose();
-    _stopCamera();
-    _controller?.dispose();
+    if (!kIsWeb) {
+      WidgetsBinding.instance.removeObserver(this);
+      _animationController.dispose();
+      _stopCamera();
+      _controller?.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Scan QR Code'),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Text(
+              'QR code scanning is available in the DSI Loyalty mobile app. '
+              'Please use the app on your phone to scan.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ),
+      );
+    }
+
     final size = MediaQuery.of(context).size;
     final scanArea = (size.width < 400 || size.height < 400) ? 250.0 : 300.0;
 

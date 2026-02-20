@@ -4,59 +4,62 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/providers/loyalty_provider.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../../../core/models/dsi_loyalty_tier.dart';
 import '../../../../core/widgets/confirmation_dialog.dart';
-import '../widgets/expandable_loyalty_section.dart';
-import '../../../../core/widgets/glass_app_bar.dart';
-import '../../../../core/widgets/toast.dart';
-import '../../../../core/widgets/section_header.dart';
-import '../../../../core/widgets/profile_info_card.dart';
-import '../../../../core/widgets/menu_card.dart';
 import '../../../../core/widgets/logout_button.dart';
-import '../../../../core/widgets/detail_row_with_icon.dart';
+import '../../../../core/widgets/menu_card.dart';
+import '../../../../core/widgets/profile_info_card.dart';
+import '../../../../core/widgets/section_header.dart';
+import '../../../../core/widgets/toast.dart';
+import 'expandable_loyalty_section.dart';
+import 'tab_page_wrapper.dart';
 
-class CustomerProfilePage extends StatelessWidget {
-  const CustomerProfilePage({super.key});
+/// Tab wrapper for Profile: header card, loyalty section, account info, settings, logout.
+class CustomerProfileTab extends StatelessWidget {
+  const CustomerProfileTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return TabPageWrapper(
+      title: 'Profile',
+      child: CustomerProfileBody(),
+    );
+  }
+}
+
+class CustomerProfileBody extends StatelessWidget {
+  const CustomerProfileBody({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      extendBodyBehindAppBar: true,
-      appBar: GlassAppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Profile',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
+    return Consumer2<AuthProvider, LoyaltyProvider>(
+      builder: (context, authProvider, loyaltyProvider, _) {
+        final userName = authProvider.userName;
+        final userEmail = authProvider.userEmail;
+        final userId = authProvider.userId;
+        loyaltyProvider.setCustomerTenure(userId, authProvider.employmentTenureYears);
+        final tier = loyaltyProvider.getTierForCustomer(userId);
+        final tenureYears = loyaltyProvider.getTenureYearsForCustomer(userId);
+
+        final initials = userName
+            .trim()
+            .split(' ')
+            .where((e) => e.isNotEmpty)
+            .map((e) => e[0])
+            .take(2)
+            .join()
+            .toUpperCase();
+
+        return Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            color: AppTheme.backgroundColor,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(25),
+            ),
           ),
-        ),
-      ),
-      body: Consumer2<AuthProvider, LoyaltyProvider>(
-        builder: (context, authProvider, loyaltyProvider, _) {
-          final userName = authProvider.userName;
-          final userEmail = authProvider.userEmail;
-          final userId = authProvider.userId;
-          loyaltyProvider.setCustomerTenure(userId, authProvider.employmentTenureYears);
-          final tier = loyaltyProvider.getTierForCustomer(userId);
-          final tenureYears = loyaltyProvider.getTenureYearsForCustomer(userId);
-
-          // Get initials for avatar
-          final initials = userName
-              .trim()
-              .split(' ')
-              .where((e) => e.isNotEmpty)
-              .map((e) => e[0])
-              .take(2)
-              .join()
-              .toUpperCase();
-
-          return SingleChildScrollView(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
             child: SafeArea(
               child: Column(
@@ -79,7 +82,7 @@ class CustomerProfilePage extends StatelessWidget {
                           offset: const Offset(0, 6),
                         ),
                       ],
-                      gradient:  const LinearGradient(
+                      gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
@@ -186,9 +189,9 @@ class CustomerProfilePage extends StatelessWidget {
                       ],
                     ),
                   ),
-              
+
                   const SizedBox(height: 24),
-              
+
                   // DSI Loyalty Section (expandable)
                   ExpandableLoyaltySection(
                     tier: tier,
@@ -223,9 +226,8 @@ class CustomerProfilePage extends StatelessWidget {
                     value: userName,
                   ),
 
-
                   const SizedBox(height: 32),
-              
+
                   // Settings Section
                   const SectionHeader(
                     title: 'Settings',
@@ -271,9 +273,9 @@ class CustomerProfilePage extends StatelessWidget {
                       Toast.info(context, 'About coming soon');
                     },
                   ),
-              
+
                   const SizedBox(height: 32),
-              
+
                   // Logout Button
                   LogoutButton(
                     onTap: () async {
@@ -288,7 +290,7 @@ class CustomerProfilePage extends StatelessWidget {
                         onConfirm: () => Navigator.pop(context, true),
                         onCancel: () => Navigator.pop(context, false),
                       );
-              
+
                       if (confirmed == true && context.mounted) {
                         await authProvider.logout();
                         if (context.mounted) {
@@ -297,15 +299,14 @@ class CustomerProfilePage extends StatelessWidget {
                       }
                     },
                   ),
-              
+
                   const SizedBox(height: 24),
                 ],
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
-

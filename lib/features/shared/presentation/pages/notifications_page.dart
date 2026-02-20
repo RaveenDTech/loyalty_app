@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/notification_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/toast.dart';
-import '../../../supplier/presentation/widgets/empty_state_card.dart';
+import '../../../../core/widgets/empty_state_card.dart';
 
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
@@ -57,18 +58,20 @@ class NotificationsPage extends StatelessWidget {
           final notifications = notificationProvider.notifications;
 
           if (notifications.isEmpty) {
-            return Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppTheme.backgroundColor,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(25),
+            return SafeArea(
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: AppTheme.backgroundColor,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(25),
+                  ),
                 ),
-              ),
-              child: const EmptyStateCard(
-                icon: Icons.notifications_none_outlined,
-                title: 'No notifications',
-                subtitle: 'You\'re all caught up! New notifications will appear here',
+                child: const EmptyStateCard(
+                  icon: Icons.notifications_none_outlined,
+                  title: 'No notifications',
+                  subtitle: 'You\'re all caught up! New notifications will appear here',
+                ),
               ),
             );
           }
@@ -81,16 +84,18 @@ class NotificationsPage extends StatelessWidget {
                 top: Radius.circular(25),
               ),
             ),
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-              itemCount: notifications.length,
-              itemBuilder: (context, index) {
-                final notification = notifications[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: _NotificationCard(notification: notification),
-                );
-              },
+            child: SafeArea(
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+                itemCount: notifications.length,
+                itemBuilder: (context, index) {
+                  final notification = notifications[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _NotificationCard(notification: notification),
+                  );
+                },
+              ),
             ),
           );
         },
@@ -126,7 +131,7 @@ class _NotificationCard extends StatelessWidget {
       return Icons.receipt_long_rounded;
     } else if (lowerTitle.contains('reject') || lowerTitle.contains('denied')) {
       return Icons.cancel_rounded;
-    } else if (lowerTitle.contains('discount')) {
+    } else if (lowerTitle.contains('discount') || lowerTitle.contains('offer') || lowerTitle.contains('25%')) {
       return Icons.discount_rounded;
     }
     return Icons.notifications_rounded;
@@ -140,7 +145,7 @@ class _NotificationCard extends StatelessWidget {
       return AppTheme.primaryColor;
     } else if (lowerTitle.contains('reject') || lowerTitle.contains('denied')) {
       return AppTheme.errorColor;
-    } else if (lowerTitle.contains('discount')) {
+    } else if (lowerTitle.contains('discount') || lowerTitle.contains('offer') || lowerTitle.contains('25%')) {
       return AppTheme.warningColor;
     }
     return AppTheme.secondaryColor;
@@ -157,9 +162,17 @@ class _NotificationCard extends StatelessWidget {
 
     return InkWell(
       onTap: () {
+        final provider = Provider.of<NotificationProvider>(context, listen: false);
         if (!isRead) {
-          Provider.of<NotificationProvider>(context, listen: false)
-              .markAsRead(notification.id);
+          provider.markAsRead(notification.id);
+        }
+        // Navigate to promotion details if payload is promotion:*
+        final payload = notification.payload;
+        if (payload != null && payload.startsWith('promotion:')) {
+          final promotionId = payload.contains(':') ? payload.split(':').last : '';
+          if (promotionId.isNotEmpty) {
+            context.push('/customer/promotion-details?promotionId=$promotionId');
+          }
         }
       },
       borderRadius: BorderRadius.circular(16),

@@ -1,7 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/onboarding/epf_verification_page.dart';
+import '../../features/auth/presentation/pages/onboarding/employee_details_verification_page.dart';
+import '../../features/auth/presentation/pages/onboarding/otp_page.dart';
+import '../../features/auth/presentation/pages/onboarding/create_user_page.dart';
+import '../../core/models/employee_details.dart';
 import '../../features/customer/presentation/pages/customer_home_page.dart';
 import '../../features/customer/presentation/pages/qr_scan_page.dart';
 import '../../features/customer/presentation/pages/customer_transactions_page.dart';
@@ -19,8 +23,8 @@ import '../../features/customer/presentation/pages/voucher_purchase_page.dart';
 import '../../features/customer/presentation/pages/voucher_success_page.dart';
 import '../../features/customer/presentation/pages/voucher_history_page.dart';
 import '../../features/customer/presentation/pages/voucher_details_page.dart';
+import '../../features/customer/presentation/pages/promotion_details_page.dart';
 import '../../features/shared/presentation/pages/notifications_page.dart';
-import '../../core/providers/auth_provider.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -29,6 +33,37 @@ class AppRouter {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/epf',
+        builder: (context, state) => const EpfVerificationPage(),
+      ),
+      GoRoute(
+        path: '/onboarding/employee-details',
+        builder: (context, state) {
+          final extra = state.extra;
+          return EmployeeDetailsVerificationPage(
+            employeeDetails: extra is EmployeeDetails ? extra : null,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/onboarding/otp',
+        builder: (context, state) {
+          final extra = state.extra;
+          return OtpPage(
+            employeeDetails: extra is EmployeeDetails ? extra : null,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/onboarding/create-user',
+        builder: (context, state) {
+          final extra = state.extra;
+          return CreateUserPage(
+            employeeDetails: extra is EmployeeDetails ? extra : null,
+          );
+        },
       ),
       // Customer Routes
       GoRoute(
@@ -83,6 +118,13 @@ class AppRouter {
           final voucherId = state.uri.queryParameters['voucherId'] ?? '';
           final isShared = state.uri.queryParameters['shared'] == 'true';
           return VoucherDetailsPage(voucherId: voucherId, isShared: isShared);
+        },
+      ),
+      GoRoute(
+        path: '/customer/promotion-details',
+        builder: (context, state) {
+          final promotionId = state.uri.queryParameters['promotionId'] ?? '';
+          return PromotionDetailsPage(promotionId: promotionId);
         },
       ),
       // Supplier Routes

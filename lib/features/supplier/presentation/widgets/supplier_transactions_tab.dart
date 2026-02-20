@@ -1,199 +1,207 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/providers/loyalty_provider.dart';
 import '../../../../core/providers/auth_provider.dart';
+import '../../../../core/providers/loyalty_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/currency_format.dart';
-import '../../../../core/widgets/glass_app_bar.dart';
+import '../../../../core/widgets/detail_row.dart';
 import '../../../../core/widgets/empty_state_card.dart';
 import '../../../../core/widgets/summary_row.dart';
-import '../../../../core/widgets/detail_row.dart';
+import 'tab_page_wrapper.dart';
 
-class CustomerTransactionsPage extends StatelessWidget {
-  const CustomerTransactionsPage({super.key});
+/// Tab for All Transactions: summary card and list or empty state.
+class SupplierTransactionsTab extends StatelessWidget {
+  const SupplierTransactionsTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    const Color _bgTop = Color(0xFF080E27);
-
-    return Scaffold(
-      backgroundColor: _bgTop,
-      extendBodyBehindAppBar: true ,
-      appBar: GlassAppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'All Transactions',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-      body: Consumer2<LoyaltyProvider, AuthProvider>(
-        builder: (context, loyaltyProvider, authProvider, _) {
-          final transactions = loyaltyProvider
-              .getCustomerTransactions(authProvider.userId)
-            ..sort((a, b) => b.completedAt.compareTo(a.completedAt));
-
-          if (transactions.isEmpty) {
-            return SafeArea(
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  color: AppTheme.backgroundColor,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(25),
-                  ),
-                ),
-                child: const EmptyStateCard(
-                  icon: Icons.receipt_long_outlined,
-                  title: 'No transactions yet',
-                  subtitle: 'Completed transactions will appear here',
-                ),
-              ),
-            );
-          }
-
-          // Calculate summary
-          double totalBillAmount = 0;
-          double totalDiscount = 0;
-          double totalFinalAmount = 0;
-
-          for (var transaction in transactions) {
-            totalBillAmount += transaction.billAmount;
-            totalDiscount += transaction.discountAmount;
-            totalFinalAmount += transaction.finalAmount;
-          }
-
-          return Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: AppTheme.backgroundColor,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(25),
-              ),
-            ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  // Summary Card
-                  Container(
-                    margin: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppTheme.primaryColor,
-                          AppTheme.primaryDark,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryColor.withOpacity(0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.analytics_rounded,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Total Summary',
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        SummaryRow(
-                          label: 'Total Spent',
-                          value: CurrencyFormat.lkr(totalBillAmount, decimalDigits: 0),
-                        ),
-                        const SizedBox(height: 12),
-                        Divider(
-                          color: Colors.white.withOpacity(0.2),
-                          height: 1,
-                        ),
-                        const SizedBox(height: 12),
-                        SummaryRow(
-                          label: 'Total Saved',
-                          value: CurrencyFormat.lkr(totalDiscount, decimalDigits: 0),
-                          valueColor: AppTheme.successColor,
-                        ),
-                        const SizedBox(height: 12),
-                        Divider(
-                          color: Colors.white.withOpacity(0.2),
-                          height: 1,
-                        ),
-                        const SizedBox(height: 12),
-                        SummaryRow(
-                          label: 'Total Paid',
-                          value: CurrencyFormat.lkr(totalFinalAmount, decimalDigits: 0),
-                          isBold: true,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Transactions List
-                  Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-
-                      itemCount: transactions.length,
-                      itemBuilder: (context, index) {
-                        final transaction = transactions[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _TransactionCard(transaction: transaction),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+    return TabPageWrapper(
+      title: 'All Transactions',
+      child: SupplierTransactionsBody(),
     );
   }
 }
 
-class _TransactionCard extends StatefulWidget {
-  final dynamic transaction;
-
-  const _TransactionCard({required this.transaction});
+class SupplierTransactionsBody extends StatelessWidget {
+  const SupplierTransactionsBody({super.key});
 
   @override
-  State<_TransactionCard> createState() => _TransactionCardState();
+  Widget build(BuildContext context) {
+    return Consumer2<LoyaltyProvider, AuthProvider>(
+      builder: (context, loyaltyProvider, authProvider, _) {
+        final transactions =
+            loyaltyProvider.getSupplierTransactions(authProvider.userId)
+              ..sort((a, b) => b.completedAt.compareTo(a.completedAt));
+
+        if (transactions.isEmpty) {
+          return SafeArea(
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(25),
+                ),
+              ),
+              child: const EmptyStateCard(
+                icon: Icons.receipt_long_outlined,
+                title: 'No transactions yet',
+                subtitle: 'Completed transactions will appear here',
+              ),
+            ),
+          );
+        }
+
+        double totalBillAmount = 0;
+        double totalDiscount = 0;
+        double totalFinalAmount = 0;
+
+        for (var transaction in transactions) {
+          totalBillAmount += transaction.billAmount;
+          totalDiscount += transaction.discountAmount;
+          totalFinalAmount += transaction.finalAmount;
+        }
+
+        final transactionCount = transactions.length;
+        final customerCount =
+            transactions.map((t) => t.customerId).toSet().length;
+
+        return Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            color: AppTheme.backgroundColor,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(25),
+            ),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppTheme.primaryColor,
+                        AppTheme.primaryDark,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.analytics_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Total Summary',
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      SummaryRow(
+                        label: 'Number of Transactions',
+                        value: transactionCount.toString(),
+                      ),
+                      const SizedBox(height: 12),
+                      SummaryRow(
+                        label: 'Customer Count',
+                        value: customerCount.toString(),
+                      ),
+                      const SizedBox(height: 12),
+                      Divider(
+                        color: Colors.white.withOpacity(0.2),
+                        height: 1,
+                      ),
+                      const SizedBox(height: 12),
+                      SummaryRow(
+                        label: 'Total Bill Amount',
+                        value: CurrencyFormat.lkr(totalBillAmount, decimalDigits: 0),
+                      ),
+                      const SizedBox(height: 12),
+                      Divider(
+                        color: Colors.white.withOpacity(0.2),
+                        height: 1,
+                      ),
+                      const SizedBox(height: 12),
+                      SummaryRow(
+                        label: 'Total Discount Given',
+                        value: CurrencyFormat.lkr(totalDiscount, decimalDigits: 0),
+                        valueColor: AppTheme.successColor,
+                      ),
+                      const SizedBox(height: 12),
+                      Divider(
+                        color: Colors.white.withOpacity(0.2),
+                        height: 1,
+                      ),
+                      const SizedBox(height: 12),
+                      SummaryRow(
+                        label: 'Total Final Amount',
+                        value: CurrencyFormat.lkr(totalFinalAmount, decimalDigits: 0),
+                        isBold: true,
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 130),
+                    itemCount: transactions.length,
+                    itemBuilder: (context, index) {
+                      final transaction = transactions[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _EmbeddedTransactionCard(transaction: transaction),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
-class _TransactionCardState extends State<_TransactionCard> {
+class _EmbeddedTransactionCard extends StatefulWidget {
+  final dynamic transaction;
+
+  const _EmbeddedTransactionCard({required this.transaction});
+
+  @override
+  State<_EmbeddedTransactionCard> createState() => _EmbeddedTransactionCardState();
+}
+
+class _EmbeddedTransactionCardState extends State<_EmbeddedTransactionCard> {
   bool _isExpanded = false;
 
   String _getTimeAgo(DateTime date) {
@@ -213,8 +221,8 @@ class _TransactionCardState extends State<_TransactionCard> {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('MMM dd, yyyy');
     final timeFormat = DateFormat('hh:mm a');
-    final supplierName = widget.transaction.supplierName?.toString() ?? 'Supplier';
-    final initials = supplierName
+    final customerName = widget.transaction.customerName.toString();
+    final initials = customerName
         .trim()
         .split(' ')
         .where((e) => e.isNotEmpty)
@@ -235,7 +243,6 @@ class _TransactionCardState extends State<_TransactionCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header - always visible
           InkWell(
             onTap: () {
               setState(() {
@@ -266,7 +273,6 @@ class _TransactionCardState extends State<_TransactionCard> {
               ),
               child: Row(
                 children: [
-                  // Avatar
                   Container(
                     width: 48,
                     height: 48,
@@ -300,13 +306,12 @@ class _TransactionCardState extends State<_TransactionCard> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Supplier Info
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          supplierName,
+                          customerName,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
@@ -334,7 +339,6 @@ class _TransactionCardState extends State<_TransactionCard> {
                       ],
                     ),
                   ),
-                  // Amount
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -347,7 +351,7 @@ class _TransactionCardState extends State<_TransactionCard> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Saved: ${_money(widget.transaction.discountAmount)}',
+                        'Disc: ${_money(widget.transaction.discountAmount)}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppTheme.textSecondary,
                           fontSize: 11,
@@ -356,7 +360,6 @@ class _TransactionCardState extends State<_TransactionCard> {
                     ],
                   ),
                   const SizedBox(width: 8),
-                  // Expand/Collapse Icon
                   AnimatedRotation(
                     turns: _isExpanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
@@ -370,8 +373,6 @@ class _TransactionCardState extends State<_TransactionCard> {
               ),
             ),
           ),
-
-          // Expandable Content
           ClipRect(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
@@ -397,7 +398,6 @@ class _TransactionCardState extends State<_TransactionCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Transaction Details
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -436,7 +436,6 @@ class _TransactionCardState extends State<_TransactionCard> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // Date and Time
                           Row(
                             children: [
                               const Icon(
@@ -513,4 +512,3 @@ class _TransactionCardState extends State<_TransactionCard> {
     );
   }
 }
-

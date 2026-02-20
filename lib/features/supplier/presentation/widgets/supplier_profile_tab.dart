@@ -1,73 +1,67 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/providers/auth_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/confirmation_dialog.dart';
-import '../../../../core/widgets/glass_app_bar.dart';
-import '../../../../core/widgets/toast.dart';
-import '../../../../core/widgets/section_header.dart';
-import '../../../../core/widgets/profile_info_card.dart';
-import '../../../../core/widgets/menu_card.dart';
 import '../../../../core/widgets/logout_button.dart';
+import '../../../../core/widgets/menu_card.dart';
+import '../../../../core/widgets/profile_info_card.dart';
+import '../../../../core/widgets/section_header.dart';
+import '../../../../core/widgets/toast.dart';
+import 'tab_page_wrapper.dart';
 
-class SupplierProfilePage extends StatelessWidget {
-  const SupplierProfilePage({super.key});
+/// Tab for Profile: header card, account info, settings, logout.
+class SupplierProfileTab extends StatelessWidget {
+  const SupplierProfileTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    const Color _bgTop = Color(0xFF080E27);
+    return TabPageWrapper(
+      title: 'Profile',
+      child: SupplierProfileBody(),
+    );
+  }
+}
 
-    return Scaffold(
-      backgroundColor: _bgTop,
-      extendBodyBehindAppBar: true ,
-      appBar: GlassAppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text(
-          'Profile',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, _) {
-          final userName = authProvider.userName;
-          final userEmail = authProvider.userEmail;
-          final userId = authProvider.userId;
+class SupplierProfileBody extends StatelessWidget {
+  const SupplierProfileBody({super.key});
 
-          // Get initials for avatar
-          final initials = userName
-              .trim()
-              .split(' ')
-              .where((e) => e.isNotEmpty)
-              .map((e) => e[0])
-              .take(2)
-              .join()
-              .toUpperCase();
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        final userName = authProvider.userName;
+        final userEmail = authProvider.userEmail;
+        final userId = authProvider.userId;
 
-          return Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: AppTheme.backgroundColor,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(25),
-              ),
+        final initials = userName
+            .trim()
+            .split(' ')
+            .where((e) => e.isNotEmpty)
+            .map((e) => e[0])
+            .take(2)
+            .join()
+            .toUpperCase();
+
+        return Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            color: AppTheme.backgroundColor,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(25),
             ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 130),
+            child: SafeArea(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Profile Header Card
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
@@ -86,7 +80,6 @@ class SupplierProfilePage extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        // Avatar
                         Container(
                           width: 100,
                           height: 100,
@@ -112,17 +105,17 @@ class SupplierProfilePage extends StatelessWidget {
                         const SizedBox(height: 16),
                         Text(
                           userName,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           userEmail,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: Colors.white.withOpacity(0.9),
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Colors.white.withOpacity(0.9),
+                              ),
                         ),
                         const SizedBox(height: 8),
                         Container(
@@ -136,20 +129,17 @@ class SupplierProfilePage extends StatelessWidget {
                           ),
                           child: Text(
                             'Supplier',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
                           ),
                         ),
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 24),
-
-                  // Account Information Section
-                  SectionHeader(
+                  const SizedBox(height: 40),
+                  const SectionHeader(
                     title: 'Account Information',
                     icon: Icons.person_outline_rounded,
                   ),
@@ -174,11 +164,8 @@ class SupplierProfilePage extends StatelessWidget {
                     title: 'Store Name',
                     value: userName,
                   ),
-
                   const SizedBox(height: 32),
-
-                  // Settings Section
-                  SectionHeader(
+                  const SectionHeader(
                     title: 'Settings',
                     icon: Icons.settings_outlined,
                   ),
@@ -222,10 +209,7 @@ class SupplierProfilePage extends StatelessWidget {
                       Toast.info(context, 'About coming soon');
                     },
                   ),
-
                   const SizedBox(height: 32),
-
-                  // Logout Button
                   LogoutButton(
                     onTap: () async {
                       final confirmed = await ConfirmationDialog.show(
@@ -239,7 +223,6 @@ class SupplierProfilePage extends StatelessWidget {
                         onConfirm: () => Navigator.pop(context, true),
                         onCancel: () => Navigator.pop(context, false),
                       );
-
                       if (confirmed == true && context.mounted) {
                         await authProvider.logout();
                         if (context.mounted) {
@@ -248,14 +231,13 @@ class SupplierProfilePage extends StatelessWidget {
                       }
                     },
                   ),
-
                   const SizedBox(height: 24),
                 ],
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

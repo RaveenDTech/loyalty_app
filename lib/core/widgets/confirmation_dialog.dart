@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:sizer/sizer.dart';
 import '../theme/app_theme.dart';
 
 /// Common confirmation dialog widget used throughout the app
@@ -77,6 +78,7 @@ class ConfirmationDialog extends StatelessWidget {
       elevation: 1,
       child: Container(
         padding: const EdgeInsets.all(24),
+        width: 50.h,
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor,
           borderRadius: BorderRadius.circular(24),

@@ -13,10 +13,12 @@ class NotificationProvider extends ChangeNotifier {
 
   NotificationProvider() {
     _initializeNotifications();
+    seedDummyPromotionNotification();
   }
 
   Future<void> _initializeNotifications() async {
-    // Configure notification channels
+    if (kIsWeb) return;
+    // Configure notification channels (Android only)
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'loyalty_notifications',
       'Loyalty Notifications',
@@ -35,25 +37,27 @@ class NotificationProvider extends ChangeNotifier {
     required String body,
     String? payload,
   }) async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'loyalty_notifications',
-      'Loyalty Notifications',
-      channelDescription: 'Notifications for loyalty requests and transactions',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
+    if (!kIsWeb) {
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+        'loyalty_notifications',
+        'Loyalty Notifications',
+        channelDescription: 'Notifications for loyalty requests and transactions',
+        importance: Importance.high,
+        priority: Priority.high,
+      );
 
-    const NotificationDetails notificationDetails =
-        NotificationDetails(android: androidDetails);
+      const NotificationDetails notificationDetails =
+          NotificationDetails(android: androidDetails);
 
-    await _localNotifications.show(
-      DateTime.now().millisecondsSinceEpoch % 100000,
-      title,
-      body,
-      notificationDetails,
-      payload: payload,
-    );
+      await _localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch % 100000,
+        title,
+        body,
+        notificationDetails,
+        payload: payload,
+      );
+    }
 
     // Add to notifications list
     _notifications.insert(
@@ -64,6 +68,26 @@ class NotificationProvider extends ChangeNotifier {
         body: body,
         timestamp: DateTime.now(),
         isRead: false,
+        payload: payload,
+      ),
+    );
+    _unreadCount++;
+    notifyListeners();
+  }
+
+  /// Seeds a dummy promotion notification (e.g. latest shoe offer) if not already present.
+  void seedDummyPromotionNotification() {
+    const dummyId = 'dummy_promotion_shoe_offer';
+    if (_notifications.any((n) => n.id == dummyId)) return;
+    _notifications.insert(
+      0,
+      NotificationModel(
+        id: dummyId,
+        title: 'Latest shoe offer with 25% discount',
+        body: 'SampathCards: 25% off with credit cards, 15% off with debit cards at dsifootcandy.lk. Valid 20th–23rd Feb 2026. Online only.',
+        timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+        isRead: false,
+        payload: 'promotion:shoe_offer',
       ),
     );
     _unreadCount++;
@@ -99,6 +123,8 @@ class NotificationModel {
   final String body;
   final DateTime timestamp;
   bool isRead;
+  /// Optional payload for navigation (e.g. "promotion:shoe_offer").
+  final String? payload;
 
   NotificationModel({
     required this.id,
@@ -106,5 +132,6 @@ class NotificationModel {
     required this.body,
     required this.timestamp,
     this.isRead = false,
+    this.payload,
   });
 }
