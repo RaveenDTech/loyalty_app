@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:provider/provider.dart';
 import 'package:sizer/sizer.dart';
@@ -17,6 +18,18 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Light (white) status bar and system nav bar icons for entire app
+  // Android: statusBarIconBrightness. iOS: statusBarBrightness (dark bar = light content)
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.light, // iOS: dark bar → white icons
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
 
   // Initialize local notifications (mobile only; web uses browser notifications)
   if (!kIsWeb) {
@@ -57,33 +70,47 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  static const _lightSystemUi = SystemUiOverlayStyle(
+    statusBarIconBrightness: Brightness.light,
+    statusBarBrightness: Brightness.dark, // iOS: dark bar → white icons
+    statusBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: Colors.transparent,
+  );
+
   @override
   Widget build(BuildContext context) {
     if (_showSplash) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: SplashScreen(
-          onInitializationComplete: _onSplashComplete,
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: _lightSystemUi,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: SplashScreen(
+            onInitializationComplete: _onSplashComplete,
+          ),
         ),
       );
     }
 
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ChangeNotifierProvider(create: (_) => LoyaltyProvider()),
-        ChangeNotifierProvider(create: (_) => VoucherProvider()),
-      ],
-      child: Sizer(
-        builder: (context, orientation, deviceType) {
-          return MaterialApp.router(
-            title: 'DSI Loyalty App',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            routerConfig: AppRouter.router,
-          );
-        },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _lightSystemUi,
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => NotificationProvider()),
+          ChangeNotifierProvider(create: (_) => LoyaltyProvider()),
+          ChangeNotifierProvider(create: (_) => VoucherProvider()),
+        ],
+        child: Sizer(
+          builder: (context, orientation, deviceType) {
+            return MaterialApp.router(
+              title: 'DSI Loyalty App',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.lightTheme,
+              routerConfig: AppRouter.router,
+            );
+          },
+        ),
       ),
     );
   }
